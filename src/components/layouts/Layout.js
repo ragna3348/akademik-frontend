@@ -1,0 +1,340 @@
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
+import {
+    LayoutDashboard, Building2, GraduationCap, Users, BookOpen,
+    ClipboardList, RefreshCw, CalendarDays, Wallet, Waves,
+    UserCheck, Handshake, UserCog, Settings,
+    ChevronLeft, ChevronRight, LogOut, Menu, X, School,
+    ChevronDown, ChevronUp, Bell, Home
+} from 'lucide-react';
+
+const MENU_GROUPS = [
+    {
+        group: 'Utama',
+        items: [
+            { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KEUANGAN', 'KAPRODI', 'PAMABA'] },
+        ]
+    },
+    {
+        group: 'Akademik',
+        items: [
+            { href: '/akademik/fakultas', icon: Building2, label: 'Fakultas', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK'] },
+            { href: '/akademik/prodi', icon: School, label: 'Program Studi', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
+            { href: '/akademik/jenis-kelas', icon: BookOpen, label: 'Jenis Kelas', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK'] },
+            { href: '/akademik/mahasiswa', icon: GraduationCap, label: 'Mahasiswa', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
+            { href: '/akademik/dosen', icon: UserCheck, label: 'Dosen', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
+            { href: '/akademik/mata-kuliah', icon: BookOpen, label: 'Mata Kuliah', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
+            { href: '/akademik/krs', icon: ClipboardList, label: 'KRS', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
+            { href: '/jadwal', icon: CalendarDays, label: 'Jadwal Kuliah', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
+        ]
+    },
+    {
+        group: 'Keuangan',
+        items: [
+            { href: '/keuangan', icon: Wallet, label: 'Keuangan', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] },
+            { href: '/akademik/heregistrasi', icon: RefreshCw, label: 'Heregistrasi', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] }, // ← tambah ini
+        ]
+    },
+    {
+        group: 'Penerimaan',
+        items: [
+            { href: '/pamaba/gelombang', icon: Waves, label: 'Gelombang', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA'] },
+            { href: '/pamaba/pendaftar', icon: Users, label: 'Pendaftar', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA', 'AKADEMIK'] },
+            { href: '/pamaba/afiliasi', icon: Handshake, label: 'Afiliasi', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA'] },
+        ]
+    },
+    {
+        group: 'Pengaturan',
+        items: [
+            { href: '/pengaturan/users', icon: UserCog, label: 'Manajemen User', roles: ['SUPER_ADMIN'] },
+            { href: '/pengaturan/setting', icon: Settings, label: 'Pengaturan', roles: ['SUPER_ADMIN', 'ADMIN'] },
+        ]
+    },
+];
+
+// Menu khusus DOSEN
+const DOSEN_MENU = [
+    { href: '/portal/dosen', icon: Home, label: 'Dashboard' },
+    { href: '/jadwal', icon: CalendarDays, label: 'Jadwal Mengajar' },
+];
+
+export default function Layout({ children, title }) {
+    const router = useRouter();
+    const [user, setUser] = useState(null);
+    const [sidebarOpen, setSidebarOpen] = useState(true);
+    const [mobileOpen, setMobileOpen] = useState(false);
+    const [collapsedGroups, setCollapsedGroups] = useState({});
+
+    useEffect(() => {
+        const userData = localStorage.getItem('user');
+        if (userData) setUser(JSON.parse(userData));
+    }, []);
+
+    useEffect(() => { setMobileOpen(false); }, [router.pathname]);
+
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth < 1024) setSidebarOpen(false);
+            else setSidebarOpen(true);
+        };
+        handleResize();
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+    };
+
+    const toggleGroup = (group) => {
+        setCollapsedGroups(prev => ({ ...prev, [group]: !prev[group] }));
+    };
+
+    const userRoles = user?.roles?.map(r => typeof r === 'string' ? r : r.role) || [];
+
+    // Cek apakah murni DOSEN (tidak punya role admin lain)
+    const isDosen = userRoles.includes('DOSEN') && !userRoles.some(r =>
+        ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KEUANGAN', 'KAPRODI', 'PAMABA'].includes(r)
+    );
+
+    const visibleGroups = MENU_GROUPS.map(g => ({
+        ...g,
+        items: g.items.filter(m => m.roles.some(r => userRoles.includes(r)))
+    })).filter(g => g.items.length > 0);
+
+    const getRoleLabel = (roles) => {
+        const r = roles?.[0];
+        if (typeof r === 'string') return r;
+        return r?.role || '';
+    };
+
+    // ===== SIDEBAR DOSEN =====
+    const DosenSidebarContent = () => (
+        <div className="flex flex-col h-full">
+            {/* Logo */}
+            <div className={`flex items-center gap-3 px-4 h-16 border-b border-slate-700/50 flex-shrink-0 ${!sidebarOpen && 'justify-center'}`}>
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <GraduationCap size={18} className="text-white" />
+                </div>
+                {sidebarOpen && (
+                    <div>
+                        <div className="text-white font-bold text-sm leading-tight">Sistem Akademik</div>
+                        <div className="text-slate-400 text-xs">Portal Dosen</div>
+                    </div>
+                )}
+            </div>
+
+            {/* Nav DOSEN */}
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+                {sidebarOpen && (
+                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Menu</p>
+                )}
+                {DOSEN_MENU.map(menu => {
+                    const Icon = menu.icon;
+                    const isActive = router.pathname === menu.href ||
+                        (menu.href !== '/portal/dosen' && router.pathname.startsWith(menu.href));
+                    return (
+                        <Link key={menu.href} href={menu.href}>
+                            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150
+                                ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700/60 hover:text-white'}
+                                ${!sidebarOpen && 'justify-center'}
+                            `}>
+                                <Icon size={17} className="flex-shrink-0" />
+                                {sidebarOpen && <span className="text-sm font-medium">{menu.label}</span>}
+                            </div>
+                        </Link>
+                    );
+                })}
+            </nav>
+
+            {/* User & Logout */}
+            <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
+                {sidebarOpen ? (
+                    <div className="flex items-center gap-3 mb-3 px-1">
+                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-400 text-xs font-bold">
+                                {user?.nama?.charAt(0)?.toUpperCase() || 'D'}
+                            </span>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="text-white text-sm font-semibold truncate">{user?.nama}</div>
+                            <div className="text-slate-400 text-xs">Dosen</div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-center mb-3">
+                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center">
+                            <span className="text-blue-400 text-xs font-bold">
+                                {user?.nama?.charAt(0)?.toUpperCase() || 'D'}
+                            </span>
+                        </div>
+                    </div>
+                )}
+                <button onClick={handleLogout}
+                    className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors text-sm ${!sidebarOpen && 'justify-center'}`}>
+                    <LogOut size={16} />
+                    {sidebarOpen && <span>Keluar</span>}
+                </button>
+            </div>
+        </div>
+    );
+
+    // ===== SIDEBAR ADMIN/KAPRODI =====
+    const SidebarContent = () => (
+        <div className="flex flex-col h-full">
+            <div className={`flex items-center gap-3 px-4 h-16 border-b border-slate-700/50 flex-shrink-0 ${!sidebarOpen && 'justify-center'}`}>
+                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <GraduationCap size={18} className="text-white" />
+                </div>
+                {sidebarOpen && (
+                    <div>
+                        <div className="text-white font-bold text-sm leading-tight">Sistem Akademik</div>
+                        <div className="text-slate-400 text-xs">Management Portal</div>
+                    </div>
+                )}
+            </div>
+
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+                {visibleGroups.map((group) => (
+                    <div key={group.group} className="mb-2">
+                        {sidebarOpen && (
+                            <button onClick={() => toggleGroup(group.group)}
+                                className="w-full flex items-center justify-between px-3 py-1.5 mb-1">
+                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    {group.group}
+                                </span>
+                                {collapsedGroups[group.group]
+                                    ? <ChevronDown size={12} className="text-slate-500" />
+                                    : <ChevronUp size={12} className="text-slate-500" />}
+                            </button>
+                        )}
+                        {!collapsedGroups[group.group] && group.items.map(menu => {
+                            const Icon = menu.icon;
+                            const isActive = router.pathname === menu.href ||
+                                (menu.href !== '/dashboard' && router.pathname.startsWith(menu.href));
+                            return (
+                                <Link key={menu.href} href={menu.href}>
+                                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group
+                                        ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700/60 hover:text-white'}
+                                        ${!sidebarOpen && 'justify-center'}
+                                    `}>
+                                        <Icon size={17} className="flex-shrink-0" />
+                                        {sidebarOpen && <span className="text-sm font-medium truncate">{menu.label}</span>}
+                                    </div>
+                                </Link>
+                            );
+                        })}
+                    </div>
+                ))}
+            </nav>
+
+            <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
+                {sidebarOpen ? (
+                    <div className="flex items-center gap-3 mb-3 px-1">
+                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0">
+                            <span className="text-blue-400 text-xs font-bold">
+                                {user?.nama?.charAt(0)?.toUpperCase() || 'A'}
+                            </span>
+                        </div>
+                        <div className="min-w-0">
+                            <div className="text-white text-sm font-semibold truncate">{user?.nama}</div>
+                            <div className="text-slate-400 text-xs truncate">{getRoleLabel(user?.roles)}</div>
+                        </div>
+                    </div>
+                ) : (
+                    <div className="flex justify-center mb-3">
+                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center">
+                            <span className="text-blue-400 text-xs font-bold">
+                                {user?.nama?.charAt(0)?.toUpperCase() || 'A'}
+                            </span>
+                        </div>
+                    </div>
+                )}
+                <button onClick={handleLogout}
+                    className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors text-sm ${!sidebarOpen && 'justify-center'}`}>
+                    <LogOut size={16} />
+                    {sidebarOpen && <span>Keluar</span>}
+                </button>
+            </div>
+        </div>
+    );
+
+    // Pilih sidebar berdasarkan role
+    const ActiveSidebar = isDosen ? DosenSidebarContent : SidebarContent;
+
+    return (
+        <div className="flex min-h-screen bg-slate-100">
+
+            {mobileOpen && (
+                <div className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+                    onClick={() => setMobileOpen(false)} />
+            )}
+
+            {/* Sidebar Desktop */}
+            <aside className={`hidden lg:flex flex-col ${sidebarOpen ? 'w-64' : 'w-[68px]'} bg-slate-800 fixed h-full z-30 transition-all duration-300`}>
+                <button onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-slate-600 rounded-full flex items-center justify-center text-slate-400 hover:text-white z-50 transition-colors">
+                    {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
+                </button>
+                <ActiveSidebar />
+            </aside>
+
+            {/* Sidebar Mobile */}
+            <aside className={`lg:hidden fixed top-0 left-0 h-full w-72 bg-slate-800 z-50 transform transition-transform duration-300 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+                <button onClick={() => setMobileOpen(false)}
+                    className="absolute top-4 right-4 text-slate-400 hover:text-white">
+                    <X size={20} />
+                </button>
+                <div className="w-72">
+                    <ActiveSidebar />
+                </div>
+            </aside>
+
+            {/* Main */}
+            <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-[68px]'}`}>
+                {/* Header */}
+                <header className="bg-white border-b border-slate-200 px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
+                    <div className="flex items-center gap-3">
+                        <button onClick={() => setMobileOpen(true)}
+                            className="lg:hidden p-2 rounded-lg text-slate-500 hover:bg-slate-100">
+                            <Menu size={20} />
+                        </button>
+                        <div>
+                            <h1 className="text-lg font-semibold text-slate-800 leading-tight">{title}</h1>
+                            <div className="text-xs text-slate-400 hidden sm:block">
+                                {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                            </div>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
+                            <Bell size={18} />
+                        </button>
+                        <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
+                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
+                                <span className="text-white text-xs font-bold">
+                                    {user?.nama?.charAt(0)?.toUpperCase() || 'A'}
+                                </span>
+                            </div>
+                            <div className="text-sm">
+                                <div className="font-semibold text-slate-700 leading-tight">{user?.nama}</div>
+                                <div className="text-xs text-slate-400">{isDosen ? 'Dosen' : getRoleLabel(user?.roles)}</div>
+                            </div>
+                        </div>
+                    </div>
+                </header>
+
+                <main className="flex-1 p-4 lg:p-6 overflow-auto">
+                    {children}
+                </main>
+
+                <footer className="text-center text-xs text-slate-400 py-4 border-t border-slate-200 bg-white">
+                    © {new Date().getFullYear()} Sistem Akademik. All rights reserved.
+                </footer>
+            </div>
+        </div>
+    );
+}
