@@ -3,9 +3,12 @@ import axios from 'axios';
 const BASE_URL = 'http://localhost:3000';
 
 // API dengan auth (untuk halaman admin)
-const api = axios.create({ baseURL: BASE_URL });
+const api = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    headers: { 'Content-Type': 'application/json' },
+});
 
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(config => {
     const token = localStorage.getItem('token');
     if (token) config.headers.Authorization = `Bearer ${token}`;
     return config;
