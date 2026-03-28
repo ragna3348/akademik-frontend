@@ -71,19 +71,7 @@ function EmptyChart() {
     );
 }
 
-const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length) {
-        return (
-            <div className="bg-slate-800 text-white text-xs px-3 py-2 rounded-lg shadow-lg">
-                <div className="font-semibold mb-1">{label}</div>
-                {payload.map((p, i) => (
-                    <div key={i}>{p.name}: <strong>{p.value}</strong></div>
-                ))}
-            </div>
-        );
-    }
-    return null;
-};
+
 
 export default function DashboardPage() {
     const [data, setData] = useState(null);
@@ -188,7 +176,7 @@ export default function DashboardPage() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                 <XAxis dataKey="label" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                 <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                <Tooltip content={<CustomTooltip />} />
+                                <Tooltip />
                                 <Line type="monotone" dataKey="count" stroke="#6366f1" strokeWidth={2.5}
                                     dot={{ fill: '#6366f1', r: 4, strokeWidth: 0 }} name="Pendaftar" />
                             </LineChart>
@@ -203,7 +191,7 @@ export default function DashboardPage() {
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                                 <XAxis dataKey="nama" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                 <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                                <Tooltip content={<CustomTooltip />} />
+                                <Tooltip />
                                 <Bar dataKey="total" name="Pendaftar" radius={[6, 6, 0, 0]}>
                                     {charts.pendaftarPerGelombang.map((_, i) => (
                                         <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -226,7 +214,7 @@ export default function DashboardPage() {
                                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                                     <XAxis type="number" allowDecimals={false} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                     <YAxis type="category" dataKey="nama" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={130} />
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <Tooltip />
                                     <Bar dataKey="total" name="Mahasiswa" radius={[0, 6, 6, 0]}>
                                         {charts.mahasiswaPerProdi.map((_, i) => (
                                             <Cell key={i} fill={COLORS[i % COLORS.length]} />
@@ -250,7 +238,7 @@ export default function DashboardPage() {
                                             <Cell key={i} fill={STATUS_MAHASISWA_COLOR[entry.status] || COLORS[i]} />
                                         ))}
                                     </Pie>
-                                    <Tooltip content={<CustomTooltip />} />
+                                    <Tooltip />
                                 </PieChart>
                             </ResponsiveContainer>
                             <div className="space-y-2 mt-3">
