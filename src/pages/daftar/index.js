@@ -8,10 +8,7 @@ import {
     Upload, CheckCircle, AlertTriangle, Printer, LogIn, Check,
     CreditCard, Users, Scroll, Camera, Send, RefreshCw, Info, X
 } from 'lucide-react';
-
-const BASE_URL = 'http://localhost:3000';
-
-// ==================== SEARCH SEKOLAH ====================
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 function SearchSekolah({ onSelect }) {
     const [npsn, setNpsn] = useState('');
     const [loading, setLoading] = useState(false);

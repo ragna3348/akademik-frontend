@@ -5,9 +5,7 @@ import {
     GraduationCap, ArrowRight, AlertCircle, LogOut,
     Clock, CheckCircle, XCircle, Loader
 } from 'lucide-react';
-
-const BASE_URL = 'http://localhost:3000';
-
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const STATUS_CONFIG = {
     DAFTAR: {
         icon: AlertCircle,
