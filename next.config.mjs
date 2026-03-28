@@ -1,8 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
     reactStrictMode: true,
+    output: 'standalone',
     images: {
-        domains: ['localhost'],
+        remotePatterns: [
+            { hostname: 'localhost' },
+            { hostname: '*.up.railway.app' },
+            { hostname: '*.vercel.app' },
+        ],
+    },
+    env: {
+        NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
     },
 };
 

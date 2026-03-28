@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
@@ -6,7 +6,7 @@ import {
     ClipboardList, RefreshCw, CalendarDays, Wallet, Waves,
     UserCheck, Handshake, UserCog, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu, X, School,
-    ChevronDown, ChevronUp, Bell, Home
+    ChevronDown, ChevronUp, Bell, Home, User, KeyRound, Shield
 } from 'lucide-react';
 
 const MENU_GROUPS = [
@@ -33,7 +33,7 @@ const MENU_GROUPS = [
         group: 'Keuangan',
         items: [
             { href: '/keuangan', icon: Wallet, label: 'Keuangan', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] },
-            { href: '/akademik/heregistrasi', icon: RefreshCw, label: 'Heregistrasi', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] }, // ← tambah ini
+            { href: '/akademik/heregistrasi', icon: RefreshCw, label: 'Heregistrasi', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] },
         ]
     },
     {
@@ -53,7 +53,6 @@ const MENU_GROUPS = [
     },
 ];
 
-// Menu khusus DOSEN
 const DOSEN_MENU = [
     { href: '/portal/dosen', icon: Home, label: 'Dashboard' },
     { href: '/jadwal', icon: CalendarDays, label: 'Jadwal Mengajar' },
@@ -65,6 +64,8 @@ export default function Layout({ children, title }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [collapsedGroups, setCollapsedGroups] = useState({});
+    const [profileOpen, setProfileOpen] = useState(false);
+    const profileRef = useRef(null);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -83,6 +84,17 @@ export default function Layout({ children, title }) {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    // Tutup dropdown saat klik di luar
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (profileRef.current && !profileRef.current.contains(e.target)) {
+                setProfileOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
     const handleLogout = () => {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
@@ -95,7 +107,6 @@ export default function Layout({ children, title }) {
 
     const userRoles = user?.roles?.map(r => typeof r === 'string' ? r : r.role) || [];
 
-    // Cek apakah murni DOSEN (tidak punya role admin lain)
     const isDosen = userRoles.includes('DOSEN') && !userRoles.some(r =>
         ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KEUANGAN', 'KAPRODI', 'PAMABA'].includes(r)
     );
@@ -110,6 +121,19 @@ export default function Layout({ children, title }) {
         if (typeof r === 'string') return r;
         return r?.role || '';
     };
+
+    const currentRole = isDosen ? 'Dosen' : getRoleLabel(user?.roles);
+    const userInitial = user?.nama?.charAt(0)?.toUpperCase() || 'A';
+
+    // ===== PROFILE DROPDOWN MENU =====
+    const profileMenuItems = [
+        ...(userRoles.includes('SUPER_ADMIN') || userRoles.includes('ADMIN') ? [
+            { icon: UserCog, label: 'Manajemen User', href: '/pengaturan/users', color: 'text-slate-600' },
+            { icon: Settings, label: 'Pengaturan', href: '/pengaturan/setting', color: 'text-slate-600' },
+        ] : []),
+        { divider: true },
+        { icon: LogOut, label: 'Keluar', onClick: handleLogout, color: 'text-red-500', hoverBg: 'hover:bg-red-50' },
+    ];
 
     // ===== SIDEBAR DOSEN =====
     const DosenSidebarContent = () => (
@@ -128,7 +152,7 @@ export default function Layout({ children, title }) {
             </div>
 
             {/* Nav DOSEN */}
-            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 sidebar-scroll">
                 {sidebarOpen && (
                     <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Menu</p>
                 )}
@@ -150,35 +174,20 @@ export default function Layout({ children, title }) {
                 })}
             </nav>
 
-            {/* User & Logout */}
-            <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
-                {sidebarOpen ? (
-                    <div className="flex items-center gap-3 mb-3 px-1">
+            {/* User info di sidebar (tanpa tombol keluar) */}
+            {sidebarOpen && (
+                <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
+                    <div className="flex items-center gap-3 px-1">
                         <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-blue-400 text-xs font-bold">
-                                {user?.nama?.charAt(0)?.toUpperCase() || 'D'}
-                            </span>
+                            <span className="text-blue-400 text-xs font-bold">{userInitial}</span>
                         </div>
                         <div className="min-w-0">
                             <div className="text-white text-sm font-semibold truncate">{user?.nama}</div>
                             <div className="text-slate-400 text-xs">Dosen</div>
                         </div>
                     </div>
-                ) : (
-                    <div className="flex justify-center mb-3">
-                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center">
-                            <span className="text-blue-400 text-xs font-bold">
-                                {user?.nama?.charAt(0)?.toUpperCase() || 'D'}
-                            </span>
-                        </div>
-                    </div>
-                )}
-                <button onClick={handleLogout}
-                    className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors text-sm ${!sidebarOpen && 'justify-center'}`}>
-                    <LogOut size={16} />
-                    {sidebarOpen && <span>Keluar</span>}
-                </button>
-            </div>
+                </div>
+            )}
         </div>
     );
 
@@ -197,7 +206,7 @@ export default function Layout({ children, title }) {
                 )}
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 sidebar-scroll">
                 {visibleGroups.map((group) => (
                     <div key={group.group} className="mb-2">
                         {sidebarOpen && (
@@ -231,38 +240,23 @@ export default function Layout({ children, title }) {
                 ))}
             </nav>
 
-            <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
-                {sidebarOpen ? (
-                    <div className="flex items-center gap-3 mb-3 px-1">
+            {/* User info di sidebar (tanpa tombol keluar) */}
+            {sidebarOpen && (
+                <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
+                    <div className="flex items-center gap-3 px-1">
                         <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-blue-400 text-xs font-bold">
-                                {user?.nama?.charAt(0)?.toUpperCase() || 'A'}
-                            </span>
+                            <span className="text-blue-400 text-xs font-bold">{userInitial}</span>
                         </div>
                         <div className="min-w-0">
                             <div className="text-white text-sm font-semibold truncate">{user?.nama}</div>
-                            <div className="text-slate-400 text-xs truncate">{getRoleLabel(user?.roles)}</div>
+                            <div className="text-slate-400 text-xs truncate">{currentRole}</div>
                         </div>
                     </div>
-                ) : (
-                    <div className="flex justify-center mb-3">
-                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center">
-                            <span className="text-blue-400 text-xs font-bold">
-                                {user?.nama?.charAt(0)?.toUpperCase() || 'A'}
-                            </span>
-                        </div>
-                    </div>
-                )}
-                <button onClick={handleLogout}
-                    className={`flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-colors text-sm ${!sidebarOpen && 'justify-center'}`}>
-                    <LogOut size={16} />
-                    {sidebarOpen && <span>Keluar</span>}
-                </button>
-            </div>
+                </div>
+            )}
         </div>
     );
 
-    // Pilih sidebar berdasarkan role
     const ActiveSidebar = isDosen ? DosenSidebarContent : SidebarContent;
 
     return (
@@ -295,6 +289,7 @@ export default function Layout({ children, title }) {
 
             {/* Main */}
             <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? 'lg:ml-64' : 'lg:ml-[68px]'}`}>
+
                 {/* Header */}
                 <header className="bg-white border-b border-slate-200 px-4 lg:px-6 h-16 flex items-center justify-between sticky top-0 z-20 flex-shrink-0">
                     <div className="flex items-center gap-3">
@@ -309,25 +304,91 @@ export default function Layout({ children, title }) {
                             </div>
                         </div>
                     </div>
+
+                    {/* Kanan header: Notifikasi + Profile Dropdown */}
                     <div className="flex items-center gap-2">
+                        {/* Bell */}
                         <button className="p-2 rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors">
                             <Bell size={18} />
                         </button>
-                        <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-                            <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center">
-                                <span className="text-white text-xs font-bold">
-                                    {user?.nama?.charAt(0)?.toUpperCase() || 'A'}
-                                </span>
-                            </div>
-                            <div className="text-sm">
-                                <div className="font-semibold text-slate-700 leading-tight">{user?.nama}</div>
-                                <div className="text-xs text-slate-400">{isDosen ? 'Dosen' : getRoleLabel(user?.roles)}</div>
-                            </div>
+
+                        {/* Profile Dropdown */}
+                        <div className="relative pl-2 border-l border-slate-200" ref={profileRef}>
+                            <button
+                                id="profile-menu-btn"
+                                onClick={() => setProfileOpen(prev => !prev)}
+                                className="flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer select-none"
+                            >
+                                <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                                    <span className="text-white text-xs font-bold">{userInitial}</span>
+                                </div>
+                                <div className="hidden sm:block text-left">
+                                    <div className="text-sm font-semibold text-slate-700 leading-tight">{user?.nama}</div>
+                                    <div className="text-xs text-slate-400">{currentRole}</div>
+                                </div>
+                                <ChevronDown
+                                    size={14}
+                                    className={`hidden sm:block text-slate-400 transition-transform duration-200 ${profileOpen ? 'rotate-180' : ''}`}
+                                />
+                            </button>
+
+                            {/* Dropdown Panel */}
+                            {profileOpen && (
+                                <div className="absolute right-0 top-full mt-2 w-56 bg-white rounded-xl shadow-lg border border-slate-200 py-1.5 z-50 animate-fadeIn">
+                                    {/* Info User */}
+                                    <div className="px-4 py-3 border-b border-slate-100">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-10 h-10 bg-blue-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                <span className="text-white text-sm font-bold">{userInitial}</span>
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="text-sm font-semibold text-slate-800 truncate">{user?.nama}</div>
+                                                <div className="flex items-center gap-1 mt-0.5">
+                                                    <Shield size={10} className="text-blue-500 flex-shrink-0" />
+                                                    <span className="text-xs text-blue-600 font-medium truncate">{currentRole}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Menu Items */}
+                                    <div className="py-1">
+                                        {(userRoles.includes('SUPER_ADMIN') || userRoles.includes('ADMIN')) && (
+                                            <>
+                                                <Link href="/pengaturan/users" onClick={() => setProfileOpen(false)}>
+                                                    <div className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors">
+                                                        <UserCog size={15} className="text-slate-400" />
+                                                        <span>Manajemen User</span>
+                                                    </div>
+                                                </Link>
+                                                <Link href="/pengaturan/setting" onClick={() => setProfileOpen(false)}>
+                                                    <div className="flex items-center gap-3 px-4 py-2.5 text-sm text-slate-600 hover:bg-slate-50 cursor-pointer transition-colors">
+                                                        <Settings size={15} className="text-slate-400" />
+                                                        <span>Pengaturan Sistem</span>
+                                                    </div>
+                                                </Link>
+                                            </>
+                                        )}
+                                    </div>
+
+                                    {/* Divider + Keluar */}
+                                    <div className="border-t border-slate-100 pt-1">
+                                        <button
+                                            id="logout-btn"
+                                            onClick={handleLogout}
+                                            className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 cursor-pointer transition-colors"
+                                        >
+                                            <LogOut size={15} />
+                                            <span className="font-medium">Keluar</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </header>
 
-                <main className="flex-1 p-4 lg:p-6 overflow-auto">
+                <main className="flex-1 p-4 lg:p-6 overflow-auto content-scroll">
                     {children}
                 </main>
 
@@ -335,6 +396,16 @@ export default function Layout({ children, title }) {
                     © {new Date().getFullYear()} Sistem Akademik. All rights reserved.
                 </footer>
             </div>
+
+            <style jsx global>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(-6px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+                .animate-fadeIn {
+                    animation: fadeIn 0.15s ease-out;
+                }
+            `}</style>
         </div>
     );
 }
