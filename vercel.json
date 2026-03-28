@@ -3,7 +3,12 @@
     "buildCommand": "next build",
     "outputDirectory": ".next",
     "installCommand": "npm install",
+    "build": {
+        "env": {
+            "NEXT_PUBLIC_API_URL": "https://akademik-v2-production.up.railway.app"
+        }
+    },
     "env": {
         "NEXT_PUBLIC_API_URL": "https://akademik-v2-production.up.railway.app"
     }
-}
+}
