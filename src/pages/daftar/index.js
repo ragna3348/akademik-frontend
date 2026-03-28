@@ -297,8 +297,12 @@ useEffect(() => {
         if (akun.password.length < 8) { toast.error('Password minimal 8 karakter!'); return; }
         setLoading(true);
         try {
-            await axios.post(`${BASE_URL}/otp/kirim`, akun);
-            toast.success(`OTP dikirim ke ${akun.email}!`);
+            const res = await axios.post(`${BASE_URL}/otp/kirim`, akun);
+            if (res.data.message.includes('Darurat')) {
+                toast(res.data.message, { duration: 10000, icon: '⚠️' });
+            } else {
+                toast.success(res.data.message || `OTP dikirim ke ${akun.email}!`);
+            }
             setStep(0.5); setCountdown(60);
         } catch (e) { toast.error(e.response?.data?.message || 'Gagal kirim OTP!'); }
         finally { setLoading(false); }
@@ -318,9 +322,14 @@ useEffect(() => {
 
     const handleKirimUlang = async () => {
         try {
-            await axios.post(`${BASE_URL}/otp/kirim-ulang`, { email: akun.email });
-            toast.success('OTP baru telah dikirim!'); setCountdown(60);
-        } catch { toast.error('Gagal kirim ulang!'); }
+            const res = await axios.post(`${BASE_URL}/otp/kirim-ulang`, { email: akun.email });
+            if (res.data.message.includes('Darurat')) {
+                toast(res.data.message, { duration: 10000, icon: '⚠️' });
+            } else {
+                toast.success(res.data.message || 'OTP baru telah dikirim!');
+            }
+            setCountdown(60);
+        } catch (e) { toast.error(e.response?.data?.message || 'Gagal kirim ulang!'); }
     };
 
     const handleSubmit = async () => {
