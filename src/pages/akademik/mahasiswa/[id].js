@@ -166,7 +166,7 @@ export default function DetailMahasiswaPage() {
                             {[
                                 { icon: GraduationCap, label: 'Program Studi', value: data.prodi?.nama },
                                 { icon: BookOpen,      label: 'Jenjang',       value: data.prodi?.jenjang },
-                                { icon: Users,         label: 'Jenis Kelas',   value: data.jenisKelas?.nama || '-' },
+                                { icon: Users,         label: 'Jenis Mahasiswa',   value: data.jenisMhs?.nama || '-' },
                                 { icon: Calendar,      label: 'Semester',      value: `Semester ${data.semester}` },
                                 { icon: Calendar,      label: 'Angkatan',      value: data.tahunAngkatan },
                                 { icon: CheckCircle,   label: 'Status',        value: data.status },

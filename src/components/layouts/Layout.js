@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import {
@@ -6,7 +6,8 @@ import {
     ClipboardList, RefreshCw, CalendarDays, Wallet, Waves,
     UserCheck, Handshake, UserCog, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu, X, School,
-    ChevronDown, ChevronUp, Bell, Home, User, KeyRound, Shield
+    ChevronDown, ChevronUp, Bell, Home, User, KeyRound, Shield,
+    CreditCard, FileQuestion, PenLine, Database
 } from 'lucide-react';
 
 const MENU_GROUPS = [
@@ -21,7 +22,7 @@ const MENU_GROUPS = [
         items: [
             { href: '/akademik/fakultas', icon: Building2, label: 'Fakultas', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK'] },
             { href: '/akademik/prodi', icon: School, label: 'Program Studi', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
-            { href: '/akademik/jenis-kelas', icon: BookOpen, label: 'Jenis Kelas', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK'] },
+            { href: '/akademik/jenis-mahasiswa', icon: BookOpen, label: 'Jenis Mahasiswa', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK'] },
             { href: '/akademik/mahasiswa', icon: GraduationCap, label: 'Mahasiswa', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
             { href: '/akademik/dosen', icon: UserCheck, label: 'Dosen', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
             { href: '/akademik/mata-kuliah', icon: BookOpen, label: 'Mata Kuliah', roles: ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KAPRODI'] },
@@ -32,6 +33,7 @@ const MENU_GROUPS = [
     {
         group: 'Keuangan',
         items: [
+            { href: '/keuangan/jenis', icon: Database, label: 'Master Keuangan', roles: ['SUPER_ADMIN'] },
             { href: '/keuangan', icon: Wallet, label: 'Keuangan', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] },
             { href: '/akademik/heregistrasi', icon: RefreshCw, label: 'Heregistrasi', roles: ['SUPER_ADMIN', 'ADMIN', 'KEUANGAN'] },
         ]
@@ -41,6 +43,8 @@ const MENU_GROUPS = [
         items: [
             { href: '/pamaba/gelombang', icon: Waves, label: 'Gelombang', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA'] },
             { href: '/pamaba/pendaftar', icon: Users, label: 'Pendaftar', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA', 'AKADEMIK'] },
+            { href: '/pamaba/pembayaran', icon: CreditCard, label: 'Pembayaran', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA', 'KEUANGAN'] },
+            { href: '/pamaba/bank-soal', icon: FileQuestion, label: 'Bank Soal', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA'] },
             { href: '/pamaba/afiliasi', icon: Handshake, label: 'Afiliasi', roles: ['SUPER_ADMIN', 'ADMIN', 'PAMABA'] },
         ]
     },
@@ -66,6 +70,7 @@ export default function Layout({ children, title }) {
     const [collapsedGroups, setCollapsedGroups] = useState({});
     const [profileOpen, setProfileOpen] = useState(false);
     const profileRef = useRef(null);
+    const sidebarNavRef = useRef(null);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
@@ -135,64 +140,8 @@ export default function Layout({ children, title }) {
         { icon: LogOut, label: 'Keluar', onClick: handleLogout, color: 'text-red-500', hoverBg: 'hover:bg-red-50' },
     ];
 
-    // ===== SIDEBAR DOSEN =====
-    const DosenSidebarContent = () => (
-        <div className="flex flex-col h-full">
-            {/* Logo */}
-            <div className={`flex items-center gap-3 px-4 h-16 border-b border-slate-700/50 flex-shrink-0 ${!sidebarOpen && 'justify-center'}`}>
-                <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                    <GraduationCap size={18} className="text-white" />
-                </div>
-                {sidebarOpen && (
-                    <div>
-                        <div className="text-white font-bold text-sm leading-tight">Sistem Akademik</div>
-                        <div className="text-slate-400 text-xs">Portal Dosen</div>
-                    </div>
-                )}
-            </div>
-
-            {/* Nav DOSEN */}
-            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 sidebar-scroll">
-                {sidebarOpen && (
-                    <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Menu</p>
-                )}
-                {DOSEN_MENU.map(menu => {
-                    const Icon = menu.icon;
-                    const isActive = router.pathname === menu.href ||
-                        (menu.href !== '/portal/dosen' && router.pathname.startsWith(menu.href));
-                    return (
-                        <Link key={menu.href} href={menu.href}>
-                            <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150
-                                ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700/60 hover:text-white'}
-                                ${!sidebarOpen && 'justify-center'}
-                            `}>
-                                <Icon size={17} className="flex-shrink-0" />
-                                {sidebarOpen && <span className="text-sm font-medium">{menu.label}</span>}
-                            </div>
-                        </Link>
-                    );
-                })}
-            </nav>
-
-            {/* User info di sidebar (tanpa tombol keluar) */}
-            {sidebarOpen && (
-                <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
-                    <div className="flex items-center gap-3 px-1">
-                        <div className="w-8 h-8 bg-blue-500/20 border border-blue-500/30 rounded-full flex items-center justify-center flex-shrink-0">
-                            <span className="text-blue-400 text-xs font-bold">{userInitial}</span>
-                        </div>
-                        <div className="min-w-0">
-                            <div className="text-white text-sm font-semibold truncate">{user?.nama}</div>
-                            <div className="text-slate-400 text-xs">Dosen</div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-
-    // ===== SIDEBAR ADMIN/KAPRODI =====
-    const SidebarContent = () => (
+    // ===== RENDER SIDEBAR CONTENT (inline, not a component — prevents DOM remount & scroll reset) =====
+    const renderSidebarContent = (menuItems, isDosenMode = false) => (
         <div className="flex flex-col h-full">
             <div className={`flex items-center gap-3 px-4 h-16 border-b border-slate-700/50 flex-shrink-0 ${!sidebarOpen && 'justify-center'}`}>
                 <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -201,46 +150,69 @@ export default function Layout({ children, title }) {
                 {sidebarOpen && (
                     <div>
                         <div className="text-white font-bold text-sm leading-tight">Sistem Akademik</div>
-                        <div className="text-slate-400 text-xs">Management Portal</div>
+                        <div className="text-slate-400 text-xs">{isDosenMode ? 'Portal Dosen' : 'Management Portal'}</div>
                     </div>
                 )}
             </div>
 
-            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 sidebar-scroll">
-                {visibleGroups.map((group) => (
-                    <div key={group.group} className="mb-2">
+            <nav ref={sidebarNavRef} className="flex-1 overflow-y-auto py-4 px-2 space-y-1 sidebar-scroll">
+                {isDosenMode ? (
+                    <>
                         {sidebarOpen && (
-                            <button onClick={() => toggleGroup(group.group)}
-                                className="w-full flex items-center justify-between px-3 py-1.5 mb-1">
-                                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                                    {group.group}
-                                </span>
-                                {collapsedGroups[group.group]
-                                    ? <ChevronDown size={12} className="text-slate-500" />
-                                    : <ChevronUp size={12} className="text-slate-500" />}
-                            </button>
+                            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-3 mb-2">Menu</p>
                         )}
-                        {!collapsedGroups[group.group] && group.items.map(menu => {
+                        {DOSEN_MENU.map(menu => {
                             const Icon = menu.icon;
                             const isActive = router.pathname === menu.href ||
-                                (menu.href !== '/dashboard' && router.pathname.startsWith(menu.href));
+                                (menu.href !== '/portal/dosen' && router.pathname.startsWith(menu.href));
                             return (
                                 <Link key={menu.href} href={menu.href}>
-                                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group
+                                    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150
                                         ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700/60 hover:text-white'}
                                         ${!sidebarOpen && 'justify-center'}
                                     `}>
                                         <Icon size={17} className="flex-shrink-0" />
-                                        {sidebarOpen && <span className="text-sm font-medium truncate">{menu.label}</span>}
+                                        {sidebarOpen && <span className="text-sm font-medium">{menu.label}</span>}
                                     </div>
                                 </Link>
                             );
                         })}
-                    </div>
-                ))}
+                    </>
+                ) : (
+                    visibleGroups.map((group) => (
+                        <div key={group.group} className="mb-2">
+                            {sidebarOpen && (
+                                <button onClick={() => toggleGroup(group.group)}
+                                    className="w-full flex items-center justify-between px-3 py-1.5 mb-1">
+                                    <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                        {group.group}
+                                    </span>
+                                    {collapsedGroups[group.group]
+                                        ? <ChevronDown size={12} className="text-slate-500" />
+                                        : <ChevronUp size={12} className="text-slate-500" />}
+                                </button>
+                            )}
+                            {!collapsedGroups[group.group] && group.items.map(menu => {
+                                const Icon = menu.icon;
+                                const isActive = router.pathname === menu.href ||
+                                    (menu.href !== '/dashboard' && router.pathname.startsWith(menu.href));
+                                return (
+                                    <Link key={menu.href} href={menu.href}>
+                                        <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group
+                                            ${isActive ? 'bg-blue-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-700/60 hover:text-white'}
+                                            ${!sidebarOpen && 'justify-center'}
+                                        `}>
+                                            <Icon size={17} className="flex-shrink-0" />
+                                            {sidebarOpen && <span className="text-sm font-medium truncate">{menu.label}</span>}
+                                        </div>
+                                    </Link>
+                                );
+                            })}
+                        </div>
+                    ))
+                )}
             </nav>
 
-            {/* User info di sidebar (tanpa tombol keluar) */}
             {sidebarOpen && (
                 <div className="border-t border-slate-700/50 p-3 flex-shrink-0">
                     <div className="flex items-center gap-3 px-1">
@@ -249,15 +221,13 @@ export default function Layout({ children, title }) {
                         </div>
                         <div className="min-w-0">
                             <div className="text-white text-sm font-semibold truncate">{user?.nama}</div>
-                            <div className="text-slate-400 text-xs truncate">{currentRole}</div>
+                            <div className="text-slate-400 text-xs truncate">{isDosenMode ? 'Dosen' : currentRole}</div>
                         </div>
                     </div>
                 </div>
             )}
         </div>
     );
-
-    const ActiveSidebar = isDosen ? DosenSidebarContent : SidebarContent;
 
     return (
         <div className="flex min-h-screen bg-slate-100">
@@ -273,7 +243,7 @@ export default function Layout({ children, title }) {
                     className="absolute -right-3 top-20 w-6 h-6 bg-slate-800 border border-slate-600 rounded-full flex items-center justify-center text-slate-400 hover:text-white z-50 transition-colors">
                     {sidebarOpen ? <ChevronLeft size={12} /> : <ChevronRight size={12} />}
                 </button>
-                <ActiveSidebar />
+                {renderSidebarContent(null, isDosen)}
             </aside>
 
             {/* Sidebar Mobile */}
@@ -283,7 +253,7 @@ export default function Layout({ children, title }) {
                     <X size={20} />
                 </button>
                 <div className="w-72">
-                    <ActiveSidebar />
+                    {renderSidebarContent(null, isDosen)}
                 </div>
             </aside>
 

@@ -21,7 +21,7 @@ const FORM_INIT = {
     nim: '', nama: '', email: '', telepon: '', alamat: '',
     tahunAngkatan: new Date().getFullYear(),
     semester: 1, status: 'AKTIF',
-    prodiId: '', jenisKelasId: '', dosenWaliId: '', password: ''
+    prodiId: '', jenisMhsId: '', dosenWaliId: '', password: ''
 };
 
 export default function MahasiswaPage() {
@@ -29,7 +29,7 @@ export default function MahasiswaPage() {
     const { isReadOnly } = useRole();
     const [data, setData] = useState([]);
     const [prodi, setProdi] = useState([]);
-    const [jenisKelas, setJenisKelas] = useState([]);
+    const [jenisMhs, setJenisMhs] = useState([]);
     const [dosen, setDosen] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
@@ -52,12 +52,12 @@ export default function MahasiswaPage() {
             const [mhsRes, prodiRes, kelasRes, dosenRes] = await Promise.all([
                 api.get('/akademik/mahasiswa', { params }),
                 api.get('/prodi'),
-                api.get('/jenis-kelas/aktif'),
+                api.get('/jenis-mahasiswa/aktif'),
                 api.get('/akademik/dosen')
             ]);
             setData(mhsRes.data.data);
             setProdi(prodiRes.data.data);
-            setJenisKelas(kelasRes.data.data);
+            setJenisMhs(kelasRes.data.data);
             setDosen(dosenRes.data.data);
         } catch { toast.error('Gagal ambil data!'); }
         finally { setLoading(false); }
@@ -82,7 +82,7 @@ export default function MahasiswaPage() {
                 tahunAngkatan: item.tahunAngkatan,
                 semester: item.semester, status: item.status,
                 prodiId: item.prodiId || '',
-                jenisKelasId: item.jenisKelasId || '',
+                jenisMhsId: item.jenisMhsId || '',
                 dosenWaliId: item.dosenWaliId || '',
                 password: ''
             });
@@ -245,7 +245,7 @@ export default function MahasiswaPage() {
                                         <div className="text-xs text-slate-400">{item.email || '-'}</div>
                                     </td>
                                     <td className="px-4 py-3 text-sm text-slate-600">{item.prodi?.nama}</td>
-                                    <td className="px-4 py-3 text-sm text-slate-500">{item.jenisKelas?.nama || '-'}</td>
+                                    <td className="px-4 py-3 text-sm text-slate-500">{item.jenisMhs?.nama || '-'}</td>
                                     <td className="px-4 py-3 text-center font-semibold text-slate-700 text-sm">{item.semester}</td>
                                     <td className="px-4 py-3 text-center text-slate-500 text-sm">{item.tahunAngkatan}</td>
                                     <td className="px-4 py-3">
@@ -373,12 +373,12 @@ export default function MahasiswaPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Jenis Kelas</label>
-                                    <select value={form.jenisKelasId}
-                                        onChange={e => setForm({ ...form, jenisKelasId: e.target.value })}
+                                    <label className={labelClass}>Jenis Mahasiswa</label>
+                                    <select value={form.jenisMhsId}
+                                        onChange={e => setForm({ ...form, jenisMhsId: e.target.value })}
                                         className={inputClass}>
-                                        <option value="">-- Pilih Kelas --</option>
-                                        {jenisKelas.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
+                                        <option value="">-- Pilih --</option>
+                                        {jenisMhs.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
                                     </select>
                                 </div>
                                 <div>

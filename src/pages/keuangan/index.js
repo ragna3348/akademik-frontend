@@ -19,7 +19,7 @@ const FORM_INIT = {
 };
 
 const MASSAL_INIT = {
-    prodiId: '', jenisKelasId: '', tahunAngkatan: '',
+    prodiId: '', jenisMhsId: '', tahunAngkatan: '',
     jenis: '', nominal: '', keterangan: ''
 };
 
@@ -30,7 +30,7 @@ export default function KeuanganPage() {
     const [summary, setSummary] = useState({});
     const [mahasiswa, setMahasiswa] = useState([]);
     const [prodi, setProdi] = useState([]);
-    const [jenisKelas, setJenisKelas] = useState([]);
+    const [jenisMhs, setJenisMhs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
@@ -55,12 +55,12 @@ export default function KeuanganPage() {
             const [keuRes, prodiRes, kelasRes] = await Promise.all([
                 api.get('/keuangan', { params }),
                 api.get('/prodi'),
-                api.get('/jenis-kelas/aktif')
+                api.get('/jenis-mahasiswa/aktif')
             ]);
             setData(keuRes.data.data);
             setSummary(keuRes.data.summary);
             setProdi(prodiRes.data.data);
-            setJenisKelas(kelasRes.data.data);
+            setJenisMhs(kelasRes.data.data);
         } catch { toast.error('Gagal ambil data!'); }
         finally { setLoading(false); }
     };
@@ -405,12 +405,12 @@ export default function KeuanganPage() {
                                 </select>
                             </div>
                             <div>
-                                <label className={labelClass}>Filter Jenis Kelas</label>
-                                <select value={massalForm.jenisKelasId}
-                                    onChange={e => setMassalForm({ ...massalForm, jenisKelasId: e.target.value })}
+                                <label className={labelClass}>Filter Jenis Mahasiswa</label>
+                                <select value={massalForm.jenisMhsId}
+                                    onChange={e => setMassalForm({ ...massalForm, jenisMhsId: e.target.value })}
                                     className={inputClass}>
-                                    <option value="">Semua Kelas</option>
-                                    {jenisKelas.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
+                                    <option value="">Semua Jenis</option>
+                                    {jenisMhs.map(k => <option key={k.id} value={k.id}>{k.nama}</option>)}
                                 </select>
                             </div>
                         </div>

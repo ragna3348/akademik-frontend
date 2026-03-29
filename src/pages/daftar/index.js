@@ -6,7 +6,8 @@ import {
     GraduationCap, User, Mail, Lock, Eye, EyeOff, ArrowRight, ArrowLeft,
     Search, MapPin, Star, School, Phone, BookOpen, Hash, FileText,
     Upload, CheckCircle, AlertTriangle, Printer, LogIn, Check,
-    CreditCard, Users, Scroll, Camera, Send, RefreshCw, Info, X
+    CreditCard, Users, Scroll, Camera, Send, RefreshCw, Info, X,
+    Handshake, MessageCircle
 } from 'lucide-react';
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 function SearchSekolah({ onSelect }) {
@@ -212,9 +213,10 @@ export default function PortalDaftar() {
     const [fakultas, setFakultas] = useState([]);
     const [semuaProdi, setSemuaProdi] = useState([]);
     const [filteredProdi, setFilteredProdi] = useState([]);
-    const [jenisKelas, setJenisKelas] = useState([]);
+    const [jenisMhs, setJenisMhs] = useState([]);
     const [filterFakultas, setFilterFakultas] = useState('');
     const [filterJenjang, setFilterJenjang] = useState('');
+    const [namaKampus, setNamaKampus] = useState('Kampus');
 
     const [akun, setAkun] = useState({ nama: '', email: '', password: '', konfirmasiPassword: '' });
     const [otp, setOtp] = useState('');
@@ -223,7 +225,8 @@ export default function PortalDaftar() {
         nama: '', nik: '', tempatLahir: '', tanggalLahir: '', jenisKelamin: '', agama: '',
         email: '', telepon: '', alamat: '',
         asalSekolah: '', tahunLulus: '', nisn: '', nilaiRaport: '',
-        prodiId: '', prodiId2: '', jenisKelasId: '', gelombangId: ''
+        prodiId: '', prodiId2: '', jenisMhsId: '', gelombangId: '',
+        sumberInfo: '', kodeAfiliasi: ''
     });
 
     const [files, setFiles] = useState({ foto: null, dokumenKTP: null, dokumenKK: null, dokumenIjazah: null });
@@ -237,17 +240,25 @@ useEffect(() => {
 
     const fetchData = async () => {
         try {
-            const [gelRes, fakRes, prodiRes, kelasRes] = await Promise.all([
+            const [gelRes, fakRes, prodiRes, mhsRes] = await Promise.all([
                 axios.get(`${BASE_URL}/pamaba/gelombang`),
                 axios.get(`${BASE_URL}/fakultas`),
                 axios.get(`${BASE_URL}/prodi`),
-                axios.get(`${BASE_URL}/jenis-kelas/aktif`)
+                axios.get(`${BASE_URL}/jenis-mahasiswa/aktif`)
             ]);
             setGelombang(gelRes.data.data.filter(g => g.isAktif));
             setFakultas(fakRes.data.data.filter(f => f.isAktif));
             setSemuaProdi(prodiRes.data.data);
             setFilteredProdi(prodiRes.data.data);
-            setJenisKelas(kelasRes.data.data);
+            setJenisMhs(mhsRes.data.data);
+
+            // Fetch nama kampus dari setting
+            try {
+                const settingRes = await axios.get(`${BASE_URL}/pengaturan/setting`);
+                const settings = settingRes.data.data || [];
+                const kampusSetting = settings.find(s => s.kunci === 'nama_kampus' || s.kunci === 'nama_institusi');
+                if (kampusSetting) setNamaKampus(kampusSetting.nilai);
+            } catch {}
         } catch (e) {
             console.error('Gagal fetch data:', e);
             if (e.response?.status === 429) {
@@ -291,6 +302,15 @@ useEffect(() => {
     }
 
     fetchData();
+
+    // Read referral code from URL query
+    if (typeof window !== 'undefined') {
+        const params = new URLSearchParams(window.location.search);
+        const ref = params.get('ref') || params.get('afiliasi');
+        if (ref) {
+            setForm(f => ({ ...f, kodeAfiliasi: ref }));
+        }
+    }
 }, []);
 
     useEffect(() => {
@@ -367,7 +387,14 @@ useEffect(() => {
                 headers: { 'Content-Type': 'multipart/form-data' }
             });
             setNoPendaftaran(res.data.data.noPendaftaran);
-            setStep(6);
+
+            // Auto-login jika backend mengembalikan token
+            if (res.data.token && res.data.user) {
+                localStorage.setItem('token', res.data.token);
+                localStorage.setItem('user', JSON.stringify(res.data.user));
+            }
+
+            setStep(7); // changed from 6 to 7 (new afiliasi step is 5, dokumen is 6)
             toast.success('Pendaftaran berhasil!');
         } catch (e) { toast.error(e.response?.data?.message || 'Gagal mendaftar!'); }
         finally { setLoading(false); }
@@ -382,7 +409,8 @@ useEffect(() => {
         { num: 2, label: 'Kontak', icon: Phone },
         { num: 3, label: 'Akademik', icon: BookOpen },
         { num: 4, label: 'Prodi', icon: GraduationCap },
-        { num: 5, label: 'Dokumen', icon: Upload },
+        { num: 5, label: 'Afiliasi', icon: Handshake },
+        { num: 6, label: 'Dokumen', icon: Upload },
     ];
 
     const prodiSelected = semuaProdi.find(p => String(p.id) === form.prodiId);
@@ -787,14 +815,14 @@ useEffect(() => {
                                         </select>
                                     </div>
                                 )}
-                                {jenisKelas.length > 0 && (
+                                {jenisMhs.length > 0 && (
                                     <div>
-                                        <label className={labelClass}>Jenis Kelas *</label>
+                                        <label className={labelClass}>Jenis Mahasiswa *</label>
                                         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                                            {jenisKelas.map(k => (
-                                                <div key={k.id} onClick={() => setForm(f => ({ ...f, jenisKelasId: String(k.id) }))}
+                                            {jenisMhs.map(k => (
+                                                <div key={k.id} onClick={() => setForm(f => ({ ...f, jenisMhsId: String(k.id) }))}
                                                     className={`border-2 rounded-xl p-3 cursor-pointer transition text-center ${
-                                                        form.jenisKelasId === String(k.id)
+                                                        form.jenisMhsId === String(k.id)
                                                             ? 'border-blue-500 bg-blue-50'
                                                             : 'border-slate-200 hover:border-blue-300'
                                                     }`}>
@@ -817,7 +845,7 @@ useEffect(() => {
                                                 ['Pilihan 1', prodiSelected?.nama],
                                                 form.prodiId2 && ['Pilihan 2', prodiSelected2?.nama],
                                                 ['Jenjang', prodiSelected?.jenjang],
-                                                form.jenisKelasId && ['Jenis Kelas', jenisKelas.find(k => String(k.id) === form.jenisKelasId)?.nama],
+                                                form.jenisMhsId && ['Jenis Mahasiswa', jenisMhs.find(k => String(k.id) === form.jenisMhsId)?.nama],
                                                 gelombangSelected && ['Gelombang', gelombangSelected.nama],
                                             ].filter(Boolean).map(([label, value]) => (
                                                 <div key={label} className="flex gap-2">
@@ -841,9 +869,9 @@ useEffect(() => {
                                     <ArrowLeft size={16} /> Kembali
                                 </button>
                                 <button onClick={() => {
-                                    if (!form.prodiId) { toast.error('Pilih program studi!'); return; }
+                                if (!form.prodiId) { toast.error('Pilih program studi!'); return; }
                                     if (gelombang.length > 0 && !form.gelombangId) { toast.error('Pilih gelombang pendaftaran!'); return; }
-                                    if (jenisKelas.length > 0 && !form.jenisKelasId) { toast.error('Pilih jenis kelas!'); return; }
+                                    if (jenisMhs.length > 0 && !form.jenisMhsId) { toast.error('Pilih jenis mahasiswa!'); return; }
                                     setStep(5);
                                 }} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-xl font-semibold transition">
                                     Lanjut <ArrowRight size={16} />
@@ -852,8 +880,73 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {/* ===== Step 5 — Upload Dokumen ===== */}
+                    {/* ===== Step 5 — Afiliasi/Sumber Info ===== */}
                     {step === 5 && (
+                        <div>
+                            <div className="flex items-center gap-3 mb-6">
+                                <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+                                    <Handshake size={18} className="text-indigo-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-xl font-bold text-slate-800">Informasi Tambahan</h2>
+                                    <p className="text-slate-400 text-xs">Bantu kami mengetahui dari mana Anda tahu {namaKampus}</p>
+                                </div>
+                            </div>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className={labelClass}>Dari mana Anda mengetahui {namaKampus}?</label>
+                                    <select value={form.sumberInfo}
+                                        onChange={e => setForm({ ...form, sumberInfo: e.target.value === '__other__' ? '' : e.target.value })}
+                                        className={inputClass}>
+                                        <option value="">-- Pilih Sumber Informasi --</option>
+                                        {['Media Sosial (Instagram/Facebook/TikTok)', 'Website Resmi', 'Teman/Keluarga', 'Guru/Sekolah', 'Brosur/Poster', 'Pameran Pendidikan', 'Google/Mesin Pencari', 'Lainnya'].map(opt => (
+                                            <option key={opt} value={opt}>{opt}</option>
+                                        ))}
+                                        <option value="__other__">Isi Sendiri...</option>
+                                    </select>
+                                    {form.sumberInfo === '' && (
+                                        <input type="text"
+                                            onChange={e => setForm({ ...form, sumberInfo: e.target.value })}
+                                            className={`${inputClass} mt-2`}
+                                            placeholder="Tulis sumber informasi lainnya..." />
+                                    )}
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Kode Referal / Afiliasi (opsional)</label>
+                                    <div className="relative">
+                                        <Handshake size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                                        <input type="text" value={form.kodeAfiliasi}
+                                            onChange={e => setForm({ ...form, kodeAfiliasi: e.target.value.toUpperCase() })}
+                                            className={`${inputClass} pl-9 uppercase`}
+                                            placeholder="Masukkan kode referal jika ada"
+                                            disabled={!!new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('ref')} />
+                                    </div>
+                                    {form.kodeAfiliasi && (
+                                        <p className="text-xs text-green-600 mt-1 flex items-center gap-1">
+                                            <CheckCircle size={11} /> Kode referal: {form.kodeAfiliasi}
+                                            {new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '').get('ref') && ' (dari link referal)'}
+                                        </p>
+                                    )}
+                                    <p className="text-xs text-slate-400 mt-1">
+                                        Jika Anda mendapatkan link pendaftaran dari seseorang, kode referal akan otomatis terisi.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="flex justify-between mt-6">
+                                <button onClick={() => setStep(4)}
+                                    className="flex items-center gap-2 border-2 border-slate-200 text-slate-500 px-6 py-3 rounded-xl font-semibold hover:bg-slate-50 transition">
+                                    <ArrowLeft size={16} /> Kembali
+                                </button>
+                                <button onClick={() => setStep(6)}
+                                    className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-7 py-3 rounded-xl font-semibold transition">
+                                    Lanjut <ArrowRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* ===== Step 6 — Upload Dokumen ===== */}
+                    {step === 6 && (
                         <div>
                             <div className="flex items-center gap-3 mb-2">
                                 <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
@@ -898,7 +991,7 @@ useEffect(() => {
                                 </p>
                             </div>
                             <div className="flex justify-between mt-6">
-                                <button onClick={() => setStep(4)}
+                                <button onClick={() => setStep(5)}
                                     className="flex items-center gap-2 border-2 border-slate-200 text-slate-500 px-6 py-3 rounded-xl font-semibold hover:bg-slate-50 transition">
                                     <ArrowLeft size={16} /> Kembali
                                 </button>
@@ -910,8 +1003,8 @@ useEffect(() => {
                         </div>
                     )}
 
-                    {/* ===== Step 6 — Sukses ===== */}
-                    {step === 6 && (
+                    {/* ===== Step 7 — Sukses ===== */}
+                    {step === 7 && (
                         <div className="text-center py-6">
                             <div className="w-20 h-20 bg-green-50 rounded-2xl flex items-center justify-center mx-auto mb-5">
                                 <CheckCircle size={40} className="text-green-500" />
@@ -935,13 +1028,21 @@ useEffect(() => {
                                 </ol>
                             </div>
                             <div className="flex gap-3 justify-center">
-                                <button onClick={() => window.print()}
+                                <button onClick={() => {
+                                    // If auto-login succeeded, go to portal
+                                    const token = localStorage.getItem('token');
+                                    if (token) {
+                                        router.push('/selesaikan-pendaftaran');
+                                    } else {
+                                        router.push('/login');
+                                    }
+                                }}
                                     className="flex items-center gap-2 bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold hover:bg-blue-700 transition">
-                                    <Printer size={15} /> Cetak Bukti
+                                    <LogIn size={15} /> {localStorage.getItem('token') ? 'Masuk Portal' : 'Masuk Akun'}
                                 </button>
-                                <button onClick={() => router.push('/login')}
+                                <button onClick={() => window.print()}
                                     className="flex items-center gap-2 border-2 border-slate-200 text-slate-500 px-6 py-3 rounded-xl font-semibold hover:bg-slate-50 transition">
-                                    <LogIn size={15} /> Masuk Akun
+                                    <Printer size={15} /> Cetak Bukti
                                 </button>
                             </div>
                         </div>

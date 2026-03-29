@@ -152,7 +152,7 @@ export default function PortalProfil() {
                     {[
                         { icon: BookOpen, label: 'Semester', value: mahasiswa?.semester, color: 'text-indigo-600', bg: 'bg-indigo-50' },
                         { icon: Calendar, label: 'Angkatan', value: mahasiswa?.tahunAngkatan, color: 'text-blue-600', bg: 'bg-blue-50' },
-                        { icon: Users, label: 'Jenis Kelas', value: mahasiswa?.jenisKelas?.nama || '-', color: 'text-purple-600', bg: 'bg-purple-50' },
+                        { icon: Users, label: 'Jenis Mahasiswa', value: mahasiswa?.jenisMhs?.nama || '-', color: 'text-purple-600', bg: 'bg-purple-50' },
                         { icon: GraduationCap, label: 'Status', value: mahasiswa?.status, color: 'text-green-600', bg: 'bg-green-50' },
                     ].map(c => {
                         const Icon = c.icon;

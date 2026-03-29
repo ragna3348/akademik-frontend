@@ -196,7 +196,7 @@ export default function HeregistrasiPage() {
                                             <div className="text-xs text-slate-400">{item.email}</div>
                                         </td>
                                         <td className="px-4 py-3 text-sm text-slate-600">{item.prodi?.nama}</td>
-                                        <td className="px-4 py-3 text-sm text-slate-500">{item.jenisKelas?.nama || '-'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-500">{item.jenisMhs?.nama || '-'}</td>
                                         <td className="px-4 py-3 text-sm text-slate-500">{item.gelombang?.nama || '-'}</td>
                                         <td className="px-4 py-3">
                                             <div className="flex gap-2">
@@ -281,7 +281,7 @@ export default function HeregistrasiPage() {
                                         </td>
                                         <td className="px-4 py-3 font-mono font-bold text-indigo-600 text-sm">{item.mahasiswa?.nim}</td>
                                         <td className="px-4 py-3 text-sm text-slate-600">{item.prodi?.nama}</td>
-                                        <td className="px-4 py-3 text-sm text-slate-500">{item.jenisKelas?.nama || '-'}</td>
+                                        <td className="px-4 py-3 text-sm text-slate-500">{item.jenisMhs?.nama || '-'}</td>
                                         <td className="px-4 py-3">
                                             <span className="inline-flex items-center gap-1.5 text-xs bg-green-100 text-green-700 border border-green-200 px-2.5 py-1 rounded-full font-medium">
                                                 <CheckCircle size={11} />
@@ -349,7 +349,7 @@ export default function HeregistrasiPage() {
                                     { icon: Phone, label: 'Telepon', value: detailItem.telepon || '-' },
                                     { icon: GraduationCap, label: 'Program Studi', value: detailItem.prodi?.nama },
                                     { icon: School, label: 'Jenjang', value: detailItem.prodi?.jenjang },
-                                    { icon: Users, label: 'Jenis Kelas', value: detailItem.jenisKelas?.nama || '-' },
+                                    { icon: Users, label: 'Jenis Mahasiswa', value: detailItem.jenisMhs?.nama || '-' },
                                     { icon: Calendar, label: 'Gelombang', value: detailItem.gelombang?.nama || '-' },
                                     { icon: Calendar, label: 'Tahun Daftar', value: detailItem.tahunDaftar },
                                     { icon: School, label: 'Asal Sekolah', value: detailItem.asalSekolah || '-' },

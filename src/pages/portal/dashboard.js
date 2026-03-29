@@ -133,7 +133,7 @@ export default function PortalDashboard() {
                             { label: 'NIM', value: mhs?.nim },
                             { label: 'Program Studi', value: mhs?.prodi?.nama },
                             { label: 'Jenjang', value: mhs?.prodi?.jenjang },
-                            { label: 'Jenis Kelas', value: mhs?.jenisKelas?.nama || '-' },
+                            { label: 'Jenis Mahasiswa', value: mhs?.jenisMhs?.nama || '-' },
                             { label: 'Dosen Wali', value: mhs?.dosenWali?.nama || 'Belum ditentukan' },
                             { label: 'Email', value: mhs?.email },
                             { label: 'Telepon', value: mhs?.telepon || '-' },

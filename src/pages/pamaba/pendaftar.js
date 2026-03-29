@@ -263,7 +263,7 @@ export default function PendaftarPage() {
                                     { label: 'Tahun Lulus', value: selected.tahunLulus || '-' },
                                     { label: 'Nilai Rapor', value: selected.nilaiRaport || '-' },
                                     { label: 'Program Studi', value: selected.prodi?.nama || '-' },
-                                    { label: 'Jenis Kelas', value: selected.jenisKelas?.nama || '-' },
+                                    { label: 'Jenis Mahasiswa', value: selected.jenisMhs?.nama || '-' },
                                     { label: 'Gelombang', value: selected.gelombang?.nama || '-' },
                                     { label: 'Tahun Daftar', value: selected.tahunDaftar },
                                 ].map(({ label, value }) => (
