@@ -223,7 +223,7 @@ export default function PortalDaftar() {
         nama: '', nik: '', tempatLahir: '', tanggalLahir: '', jenisKelamin: '', agama: '',
         email: '', telepon: '', alamat: '',
         asalSekolah: '', tahunLulus: '', nisn: '', nilaiRaport: '',
-        prodiId: '', jenisKelasId: '', gelombangId: ''
+        prodiId: '', prodiId2: '', jenisKelasId: '', gelombangId: ''
     });
 
     const [files, setFiles] = useState({ foto: null, dokumenKTP: null, dokumenKK: null, dokumenIjazah: null });
@@ -256,16 +256,38 @@ useEffect(() => {
         }
     };
 
-    const userData = localStorage.getItem('user');
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            if (user.roles?.some(r => (r.role || r) === 'MAHASISWA')) {
+    const token = localStorage.getItem('token');
+    if (token) {
+        axios.get(`${BASE_URL}/auth/cek-status`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(res => {
+                if (res.data.success) {
+                    const { sudahDaftar, pendaftar, mahasiswa, role } = res.data.data;
+                    if (mahasiswa) {
+                        toast.error('Anda sudah terdaftar sebagai mahasiswa!');
+                        router.push('/dashboard');
+                    } else if (sudahDaftar && pendaftar) {
+                        setNoPendaftaran(pendaftar.noPendaftaran);
+                        setStep(6);
+                        toast.success('Anda sudah menyelesaikan pendaftaran. Lanjut ke Ujian Seleksi.');
+                    } else if (role.includes('PENDAFTAR') || role.some(r => r.role === 'PENDAFTAR')) {
+                        const user = JSON.parse(localStorage.getItem('user'));
+                        setAkun(a => ({ ...a, nama: user.nama, email: user.email }));
+                        setForm(f => ({ ...f, nama: user.nama, email: user.email }));
+                        setStep(1);
+                    }
+                }
+            })
+            .catch(() => { /* Abaikan jika token invalid */ });
+    } else {
+        const userData = localStorage.getItem('user');
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
                 setAkun(a => ({ ...a, nama: user.nama, email: user.email }));
                 setForm(f => ({ ...f, nama: user.nama, email: user.email }));
                 setStep(1);
-            }
-        } catch { /* ignore */ }
+            } catch { /* ignore */ }
+        }
     }
 
     fetchData();
@@ -282,7 +304,7 @@ useEffect(() => {
         if (filterFakultas) hasil = hasil.filter(p => String(p.fakultasId) === filterFakultas);
         if (filterJenjang) hasil = hasil.filter(p => p.jenjang === filterJenjang);
         setFilteredProdi(hasil);
-        setForm(f => ({ ...f, prodiId: '' }));
+        // Jangan hapus prodi sebelumnya saat filter berubah jika belum ada
     }, [filterFakultas, filterJenjang, semuaProdi]);
 
     const handleFileChange = (field, file) => {
@@ -364,6 +386,7 @@ useEffect(() => {
     ];
 
     const prodiSelected = semuaProdi.find(p => String(p.id) === form.prodiId);
+    const prodiSelected2 = semuaProdi.find(p => String(p.id) === form.prodiId2);
     const gelombangSelected = gelombang.find(g => String(g.id) === form.gelombangId);
 
     return (
@@ -729,7 +752,7 @@ useEffect(() => {
                                     </div>
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Program Studi *</label>
+                                    <label className={labelClass}>Program Studi (Pilihan 1) *</label>
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2 max-h-64 overflow-y-auto pr-1">
                                         {filteredProdi.length === 0 ? (
                                             <div className="col-span-2 text-center py-8 text-slate-400 border-2 border-dashed border-slate-200 rounded-xl text-sm">
@@ -751,6 +774,19 @@ useEffect(() => {
                                         ))}
                                     </div>
                                 </div>
+                                {form.prodiId && (
+                                    <div>
+                                        <label className={labelClass}>Program Studi (Pilihan 2 - Opsional)</label>
+                                        <select value={form.prodiId2}
+                                            onChange={e => setForm({ ...form, prodiId2: e.target.value })}
+                                            className={inputClass}>
+                                            <option value="">-- Pilih Prodi Ke-2 --</option>
+                                            {semuaProdi.filter(p => String(p.id) !== form.prodiId).map(p => (
+                                                <option key={p.id} value={p.id}>{p.nama} ({p.jenjang})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 {jenisKelas.length > 0 && (
                                     <div>
                                         <label className={labelClass}>Jenis Kelas *</label>
@@ -778,7 +814,8 @@ useEffect(() => {
                                         <div className="text-sm space-y-1.5 text-slate-600">
                                             {[
                                                 ['Nama', form.nama],
-                                                ['Prodi', prodiSelected?.nama],
+                                                ['Pilihan 1', prodiSelected?.nama],
+                                                form.prodiId2 && ['Pilihan 2', prodiSelected2?.nama],
                                                 ['Jenjang', prodiSelected?.jenjang],
                                                 form.jenisKelasId && ['Jenis Kelas', jenisKelas.find(k => String(k.id) === form.jenisKelasId)?.nama],
                                                 gelombangSelected && ['Gelombang', gelombangSelected.nama],

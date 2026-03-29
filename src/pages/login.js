@@ -103,19 +103,19 @@ export default function LoginPage() {
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Email */}
+                        {/* Email/Username/NIM/NIDN */}
                         <div>
                             <label className="block text-sm font-medium text-slate-300 mb-2">
-                                Alamat Email
+                                Email / Username / NIM / NIDN
                             </label>
                             <div className="relative">
                                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
                                 <input
-                                    type="email"
+                                    type="text"
                                     value={form.email}
                                     onChange={e => setForm({ ...form, email: e.target.value })}
                                     className="w-full bg-slate-800 border border-slate-700 text-white placeholder-slate-500 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 transition"
-                                    placeholder="email@kampus.ac.id"
+                                    placeholder="Masukkan identifier masuk Anda..."
                                     required
                                 />
                             </div>
