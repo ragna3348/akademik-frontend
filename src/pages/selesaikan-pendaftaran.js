@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import {
     GraduationCap, ArrowRight, AlertCircle, LogOut,
-    Clock, CheckCircle, XCircle, Loader
+    Clock, CheckCircle, XCircle, Loader, FileQuestion, ClipboardList
 } from 'lucide-react';
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const STATUS_CONFIG = {
@@ -22,6 +22,24 @@ const STATUS_CONFIG = {
         iconColor: 'text-blue-500',
         title: 'Menunggu Konfirmasi Pembayaran',
         desc: 'Pendaftaran kamu sudah diterima. Pembayaran sedang dalam proses verifikasi oleh tim keuangan. Mohon tunggu.',
+        showLanjut: false,
+        showWaiting: true,
+    },
+    UJIAN: {
+        icon: FileQuestion,
+        iconBg: 'bg-indigo-50',
+        iconColor: 'text-indigo-500',
+        title: 'Masa Pembayaran & Ujian Tes',
+        desc: 'Pendaftaran kamu berhasil! Silakan selesaikan pembayaran biaya pendaftaran (jika ada) dan ikuti ujian tes masuk sesuai jadwal yang ditentukan.',
+        showLanjut: false,
+        showWaiting: true,
+    },
+    SELESAI_UJIAN: {
+        icon: ClipboardList,
+        iconBg: 'bg-purple-50',
+        iconColor: 'text-purple-500',
+        title: 'Menunggu Pengumuman Kelulusan',
+        desc: 'Kamu telah menyelesaikan ujian tes masuk. Silakan tunggu pengumuman kelulusan dari tim penerimaan mahasiswa baru.',
         showLanjut: false,
         showWaiting: true,
     },
