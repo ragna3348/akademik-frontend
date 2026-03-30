@@ -8,10 +8,7 @@ import {
     Zap, AlertTriangle, CreditCard, Users, FileText
 } from 'lucide-react';
 
-const JENIS_TAGIHAN = [
-    'UKT Semester', 'SPP', 'Biaya Wisuda', 'Biaya Praktikum',
-    'Biaya Ujian', 'Denda', 'Lain-lain'
-];
+// Jenis tagihan sekarang ditarik dari Master Keuangan (JenisKeuangan)
 
 const FORM_INIT = {
     mahasiswaId: '', jenis: '', nominal: '',
@@ -31,6 +28,7 @@ export default function KeuanganPage() {
     const [mahasiswa, setMahasiswa] = useState([]);
     const [prodi, setProdi] = useState([]);
     const [jenisMhs, setJenisMhs] = useState([]);
+    const [jenisKeuangan, setJenisKeuangan] = useState([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState('');
     const [filterStatus, setFilterStatus] = useState('');
@@ -52,15 +50,17 @@ export default function KeuanganPage() {
             if (filterStatus) params.status = filterStatus;
             if (filterProdi) params.prodiId = filterProdi;
             if (search) params.search = search;
-            const [keuRes, prodiRes, kelasRes] = await Promise.all([
+            const [keuRes, prodiRes, kelasRes, jenisKeuRes] = await Promise.all([
                 api.get('/keuangan', { params }),
                 api.get('/prodi'),
-                api.get('/jenis-mahasiswa/aktif')
+                api.get('/jenis-mahasiswa/aktif'),
+                api.get('/keuangan/jenis')
             ]);
             setData(keuRes.data.data);
             setSummary(keuRes.data.summary);
             setProdi(prodiRes.data.data);
             setJenisMhs(kelasRes.data.data);
+            setJenisKeuangan((jenisKeuRes.data.data || []).filter(j => j.isAktif));
         } catch { toast.error('Gagal ambil data!'); }
         finally { setLoading(false); }
     };
@@ -427,7 +427,7 @@ export default function KeuanganPage() {
                                 onChange={e => setMassalForm({ ...massalForm, jenis: e.target.value })}
                                 className={inputClass}>
                                 <option value="">-- Pilih Jenis --</option>
-                                {JENIS_TAGIHAN.map(j => <option key={j} value={j}>{j}</option>)}
+                                {jenisKeuangan.map(j => <option key={j.id} value={j.nama}>{j.kode} - {j.nama}</option>)}
                             </select>
                         </div>
                         <div>
@@ -491,12 +491,18 @@ export default function KeuanganPage() {
                             )}
                             <div>
                                 <label className={labelClass}>Jenis Tagihan *</label>
-                                <select value={form.jenis}
-                                    onChange={e => setForm({ ...form, jenis: e.target.value })}
-                                    className={inputClass}>
-                                    <option value="">-- Pilih Jenis --</option>
-                                    {JENIS_TAGIHAN.map(j => <option key={j} value={j}>{j}</option>)}
-                                </select>
+                                {jenisKeuangan.length === 0 ? (
+                                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
+                                        Belum ada jenis keuangan. Tambahkan dulu di <a href="/keuangan/jenis" className="underline font-semibold">Master Keuangan</a>.
+                                    </div>
+                                ) : (
+                                    <select value={form.jenis}
+                                        onChange={e => setForm({ ...form, jenis: e.target.value })}
+                                        className={inputClass}>
+                                        <option value="">-- Pilih Jenis --</option>
+                                        {jenisKeuangan.map(j => <option key={j.id} value={j.nama}>{j.kode} - {j.nama}</option>)}
+                                    </select>
+                                )}
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>

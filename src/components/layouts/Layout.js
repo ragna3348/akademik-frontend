@@ -7,7 +7,7 @@ import {
     UserCheck, Handshake, UserCog, Settings,
     ChevronLeft, ChevronRight, LogOut, Menu, X, School,
     ChevronDown, ChevronUp, Bell, Home, User, KeyRound, Shield,
-    CreditCard, FileQuestion, PenLine, Database
+    CreditCard, FileQuestion, PenLine, Database, FileCheck, Lock as LockIcon
 } from 'lucide-react';
 
 const MENU_GROUPS = [
@@ -59,6 +59,7 @@ const MENU_GROUPS = [
 
 const DOSEN_MENU = [
     { href: '/portal/dosen', icon: Home, label: 'Dashboard' },
+    { href: '/portal/dosen/berkas', icon: FileCheck, label: 'Berkas Verifikasi', alwaysShow: true },
     { href: '/jadwal', icon: CalendarDays, label: 'Jadwal Mengajar' },
 ];
 
@@ -69,12 +70,31 @@ export default function Layout({ children, title }) {
     const [mobileOpen, setMobileOpen] = useState(false);
     const [collapsedGroups, setCollapsedGroups] = useState({});
     const [profileOpen, setProfileOpen] = useState(false);
+    const [dosenStatus, setDosenStatus] = useState(null); // PENDING, DISETUJUI, DITOLAK
     const profileRef = useRef(null);
     const sidebarNavRef = useRef(null);
 
     useEffect(() => {
         const userData = localStorage.getItem('user');
-        if (userData) setUser(JSON.parse(userData));
+        if (userData) {
+            const u = JSON.parse(userData);
+            setUser(u);
+            // Fetch dosen verification status if user is DOSEN
+            const roles = u?.roles?.map(r => typeof r === 'string' ? r : r.role) || [];
+            if (roles.includes('DOSEN') && !roles.some(r => ['SUPER_ADMIN', 'ADMIN'].includes(r))) {
+                import('@/utils/api').then(({ default: api }) => {
+                    api.get('/pamaba/dosen/by-email', { params: { email: u.email } })
+                        .then(res => setDosenStatus(res.data?.data?.statusVerifikasi || 'PENDING'))
+                        .catch(() => setDosenStatus('PENDING'));
+                });
+            }
+            // Redirect PENDAFTAR to selesaikan-pendaftaran
+            if (roles.includes('PENDAFTAR') && !roles.some(r => ['SUPER_ADMIN', 'ADMIN', 'AKADEMIK', 'KEUANGAN', 'KAPRODI', 'PAMABA', 'MAHASISWA', 'DOSEN'].includes(r))) {
+                if (typeof window !== 'undefined' && !window.location.pathname.includes('selesaikan-pendaftaran')) {
+                    window.location.href = '/selesaikan-pendaftaran';
+                }
+            }
+        }
     }, []);
 
     useEffect(() => { setMobileOpen(false); }, [router.pathname]);
@@ -165,6 +185,16 @@ export default function Layout({ children, title }) {
                             const Icon = menu.icon;
                             const isActive = router.pathname === menu.href ||
                                 (menu.href !== '/portal/dosen' && router.pathname.startsWith(menu.href));
+                            const isLocked = dosenStatus !== 'DISETUJUI' && !menu.alwaysShow;
+                            if (isLocked) {
+                                return sidebarOpen ? (
+                                    <div key={menu.href}
+                                        className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 cursor-not-allowed opacity-50">
+                                        <LockIcon size={14} className="flex-shrink-0" />
+                                        <span className="text-sm font-medium line-through">{menu.label}</span>
+                                    </div>
+                                ) : null;
+                            }
                             return (
                                 <Link key={menu.href} href={menu.href}>
                                     <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150
@@ -177,6 +207,14 @@ export default function Layout({ children, title }) {
                                 </Link>
                             );
                         })}
+                        {/* Status banner */}
+                        {sidebarOpen && dosenStatus && dosenStatus !== 'DISETUJUI' && (
+                            <div className={`mx-1 mt-3 p-2.5 rounded-lg text-xs ${
+                                dosenStatus === 'DITOLAK' ? 'bg-red-900/40 text-red-300 border border-red-800' : 'bg-amber-900/40 text-amber-300 border border-amber-800'
+                            }`}>
+                                {dosenStatus === 'PENDING' ? '⏳ Berkas dalam verifikasi admin' : '❌ Berkas ditolak, upload ulang'}
+                            </div>
+                        )}
                     </>
                 ) : (
                     visibleGroups.map((group) => (
@@ -195,7 +233,7 @@ export default function Layout({ children, title }) {
                             {!collapsedGroups[group.group] && group.items.map(menu => {
                                 const Icon = menu.icon;
                                 const isActive = router.pathname === menu.href ||
-                                    (menu.href !== '/dashboard' && router.pathname.startsWith(menu.href));
+                                    (menu.href !== '/dashboard' && menu.href !== '/keuangan' && router.pathname.startsWith(menu.href + '/'));
                                 return (
                                     <Link key={menu.href} href={menu.href}>
                                         <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all duration-150 group

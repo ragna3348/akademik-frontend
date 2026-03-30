@@ -6,14 +6,14 @@ import { Eye, EyeOff, Mail, Lock, GraduationCap, LogIn } from 'lucide-react';
 
 const ROLE_HOME = {
     MAHASISWA: '/portal/dashboard',
-    PENDAFTAR: '/daftar',
+    PENDAFTAR: '/selesaikan-pendaftaran',
     SUPER_ADMIN: '/dashboard',
     ADMIN: '/dashboard',
     AKADEMIK: '/dashboard',
     KEUANGAN: '/dashboard',
     KAPRODI: '/dashboard',
     PAMABA: '/dashboard',
-    DOSEN: '/dashboard',
+    DOSEN: '/portal/dosen',
 };
 
 export default function LoginPage() {
@@ -185,10 +185,10 @@ export default function LoginPage() {
                         </div>
 
                         {/* Daftar */}
-                        <a href="/daftar"
+                        <a href="/daftar-pilih"
                             className="w-full flex items-center justify-center gap-2 border border-slate-700 text-slate-300 hover:bg-slate-800 hover:text-white font-medium py-3 rounded-xl transition text-sm">
                             <GraduationCap size={16} />
-                            Daftar Mahasiswa Baru
+                            Daftar Baru
                         </a>
 
                     </form>

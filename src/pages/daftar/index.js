@@ -218,7 +218,7 @@ export default function PortalDaftar() {
     const [filterJenjang, setFilterJenjang] = useState('');
     const [namaKampus, setNamaKampus] = useState('Kampus');
 
-    const [akun, setAkun] = useState({ nama: '', email: '', password: '', konfirmasiPassword: '' });
+    const [akun, setAkun] = useState({ nama: '', email: '', username: '', password: '', konfirmasiPassword: '' });
     const [otp, setOtp] = useState('');
 
     const [form, setForm] = useState({
@@ -277,9 +277,8 @@ useEffect(() => {
                         toast.error('Anda sudah terdaftar sebagai mahasiswa!');
                         router.push('/dashboard');
                     } else if (sudahDaftar && pendaftar) {
-                        setNoPendaftaran(pendaftar.noPendaftaran);
-                        setStep(6);
-                        toast.success('Anda sudah menyelesaikan pendaftaran. Lanjut ke Ujian Seleksi.');
+                        toast.success('Anda sudah menyelesaikan pendaftaran.');
+                        router.push('/selesaikan-pendaftaran');
                     } else if (role.includes('PENDAFTAR') || role.some(r => r.role === 'PENDAFTAR')) {
                         const user = JSON.parse(localStorage.getItem('user'));
                         setAkun(a => ({ ...a, nama: user.nama, email: user.email }));
@@ -334,7 +333,8 @@ useEffect(() => {
     };
 
     const handleKirimOTP = async () => {
-        if (!akun.nama || !akun.email || !akun.password || !akun.konfirmasiPassword) { toast.error('Semua field harus diisi!'); return; }
+        if (!akun.nama || !akun.email || !akun.username || !akun.password || !akun.konfirmasiPassword) { toast.error('Semua field harus diisi!'); return; }
+        if (!/^[a-zA-Z0-9_]{3,20}$/.test(akun.username)) { toast.error('Username harus 3-20 karakter (huruf, angka, underscore)!'); return; }
         if (akun.password !== akun.konfirmasiPassword) { toast.error('Password tidak sama!'); return; }
         if (akun.password.length < 8) { toast.error('Password minimal 8 karakter!'); return; }
         setLoading(true);
@@ -498,6 +498,13 @@ useEffect(() => {
                                     <p className="text-xs text-slate-400 mt-1 flex items-center gap-1">
                                         <Send size={10} /> Kode OTP akan dikirim ke email ini
                                     </p>
+                                </div>
+                                <div>
+                                    <label className={labelClass}>Username *</label>
+                                    <input type="text" value={akun.username}
+                                        onChange={e => setAkun({ ...akun, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') })}
+                                        className={inputClass} placeholder="contoh: john_doe" maxLength={20} />
+                                    <p className="text-xs text-slate-400 mt-1">3-20 karakter (huruf kecil, angka, underscore)</p>
                                 </div>
                                 <div>
                                     <label className={labelClass}>Password *</label>
