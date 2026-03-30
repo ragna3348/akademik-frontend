@@ -2,22 +2,27 @@ import { useState, useEffect } from 'react';
 import Layout from '@/components/layouts/Layout';
 import api from '@/utils/api';
 import toast, { Toaster } from 'react-hot-toast';
-import { Database, Plus, Pencil, Trash2, X, Save, Hash, FileText, Info, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Plus, Edit2, Trash2, X, Save, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 
-export default function MasterKeuanganPage() {
+export default function KeuanganJenisPage() {
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+    const [limit, setLimit] = useState(25);
+    const [page, setPage] = useState(1);
+
     const [showModal, setShowModal] = useState(false);
     const [editData, setEditData] = useState(null);
     const [saving, setSaving] = useState(false);
-    const [form, setForm] = useState({ kode: '', nama: '', keterangan: '' });
+
+    const [form, setForm] = useState({ kode: '', nama: '', keterangan: '', isAktif: true });
 
     const fetchData = async () => {
         try {
             const res = await api.get('/keuangan/jenis');
-            setData(res.data.data);
-        } catch {
-            toast.error('Gagal ambil data!');
+            setData(res.data.data || []);
+        } catch (error) {
+            toast.error('Gagal memuat jenis keuangan');
         } finally {
             setLoading(false);
         }
@@ -25,204 +30,169 @@ export default function MasterKeuanganPage() {
 
     useEffect(() => { fetchData(); }, []);
 
-    const handleOpen = (item = null) => {
-        setEditData(item);
-        setForm(item ? { kode: item.kode, nama: item.nama, keterangan: item.keterangan || '' } : { kode: '', nama: '', keterangan: '' });
-        setShowModal(true);
-    };
-
     const handleSubmit = async () => {
-        if (!form.kode || !form.nama) { toast.error('Kode dan nama wajib diisi!'); return; }
+        if (!form.nama || !form.kode) {
+            toast.error('Kode dan Nama wajib diisi!');
+            return;
+        }
         setSaving(true);
         try {
             if (editData) {
                 await api.put(`/keuangan/jenis/${editData.id}`, form);
-                toast.success('Jenis keuangan berhasil diupdate!');
+                toast.success('Jenis Keuangan diupdate!');
             } else {
                 await api.post('/keuangan/jenis', form);
-                toast.success('Jenis keuangan berhasil ditambahkan!');
+                toast.success('Jenis Keuangan ditambahkan!');
             }
             setShowModal(false);
             fetchData();
-        } catch (e) {
-            toast.error(e.response?.data?.message || 'Gagal simpan!');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Terjadi kesalahan!');
         } finally {
             setSaving(false);
         }
     };
 
-    const handleToggle = async (id) => {
-        try {
-            const res = await api.patch(`/keuangan/jenis/${id}/toggle`);
-            toast.success(res.data.message);
-            fetchData();
-        } catch {
-            toast.error('Gagal update status!');
-        }
-    };
-
-    const handleDelete = async (id, nama) => {
-        if (!confirm(`Yakin hapus jenis keuangan "${nama}"?`)) return;
+    const handleDelete = async (id) => {
+        if (!confirm('Yakin ingin menghapus jenis ini?')) return;
         try {
             await api.delete(`/keuangan/jenis/${id}`);
-            toast.success('Jenis keuangan berhasil dihapus!');
+            toast.success('Jenis Terhapus');
             fetchData();
-        } catch {
-            toast.error('Gagal hapus!');
+        } catch (error) {
+            toast.error(error.response?.data?.message || 'Gagal menghapus');
         }
     };
 
-    const inputClass = "w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 focus:outline-none focus:border-emerald-400 focus:ring-1 focus:ring-emerald-400 transition";
-    const labelClass = "block text-sm font-medium text-slate-600 mb-1.5";
+    const handleEdit = (item) => {
+        setEditData(item);
+        setForm({ kode: item.kode, nama: item.nama, keterangan: item.keterangan || '', isAktif: item.isAktif });
+        setShowModal(true);
+    };
+
+    const handleAdd = () => {
+        setEditData(null);
+        setForm({ kode: '', nama: '', keterangan: '', isAktif: true });
+        setShowModal(true);
+    };
+
+    const filtered = data.filter(d => 
+        (d.nama || '').toLowerCase().includes(search.toLowerCase()) || 
+        (d.kode || '').toLowerCase().includes(search.toLowerCase())
+    );
+
+    const totalPages = Math.ceil(filtered.length / limit);
+    const paginated = filtered.slice((page - 1) * limit, page * limit);
 
     return (
-        <Layout title="Master Keuangan">
+        <Layout title="Data Jenis Keuangan">
             <Toaster position="top-right" />
-
-            {/* Info Banner */}
-            <div className="flex items-start gap-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-5">
-                <Info size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" />
-                <p className="text-emerald-700 text-sm">
-                    Master Keuangan berisi jenis-jenis tagihan yang tersedia di sistem. Hanya <strong>Super Admin</strong> yang dapat menambah atau mengedit jenis keuangan ini.
-                    Contoh: UPP, UKP, BPP, Biaya Wisuda, dll.
-                </p>
-            </div>
-
-            {/* Header */}
-            <div className="flex items-center justify-between mb-5">
-                <p className="text-sm text-slate-400">{data.length} jenis keuangan terdaftar</p>
-                <button onClick={() => handleOpen()}
-                    className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-xl font-semibold text-sm transition shadow-sm">
-                    <Plus size={16} /> Tambah Jenis
-                </button>
-            </div>
-
-            {/* Content */}
-            {loading ? (
-                <div className="flex items-center justify-center py-32">
-                    <div className="w-10 h-10 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin" />
+            <div className="bg-white border text-sm text-slate-800 border-slate-200 rounded-md">
+                <div className="flex border-b items-center justify-between px-4 py-3">
+                    <button onClick={handleAdd} className="flex items-center gap-2 border border-slate-300 px-3 py-1.5 rounded bg-slate-50 hover:bg-slate-100 font-medium">
+                        <span className="text-xl leading-none -mt-1">+</span> Tambah
+                    </button>
                 </div>
-            ) : data.length === 0 ? (
-                <div className="bg-white border border-slate-200 rounded-2xl p-16 text-center">
-                    <div className="w-14 h-14 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Database size={28} className="text-slate-400" />
+                
+                <div className="flex flex-col sm:flex-row justify-between items-center px-4 py-3 gap-3">
+                    <div className="flex items-center gap-2">
+                        <span>Tampilkan</span>
+                        <select value={limit} onChange={e => {setLimit(Number(e.target.value)); setPage(1)}} className="border rounded px-2 py-1">
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={50}>50</option>
+                            <option value={100}>100</option>
+                        </select>
+                        <span>Per Halaman</span>
                     </div>
-                    <div className="text-slate-500 font-medium">Belum ada jenis keuangan</div>
-                    <p className="text-sm text-slate-400 mt-1">Tambahkan jenis keuangan pertama</p>
+                    <div className="flex items-center gap-2">
+                        <span>Pencarian</span>
+                        <input type="text" value={search} onChange={e => {setSearch(e.target.value); setPage(1)}} className="border rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                    </div>
                 </div>
-            ) : (
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead className="bg-slate-50 border-b border-slate-200">
-                            <tr>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-600 w-10">#</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-600 w-28">Kode</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-600">Nama</th>
-                                <th className="text-left px-5 py-3 font-semibold text-slate-600">Keterangan</th>
-                                <th className="text-center px-5 py-3 font-semibold text-slate-600 w-24">Status</th>
-                                <th className="text-center px-5 py-3 font-semibold text-slate-600 w-32">Aksi</th>
+
+                <div className="overflow-x-auto px-4 pb-2">
+                    <table className="w-full text-left border-collapse min-w-[600px]">
+                        <thead>
+                            <tr className="border-b-2 border-slate-200">
+                                <th className="p-2 font-semibold flex items-center gap-1 cursor-pointer">No <span className="text-slate-300 text-[10px]">▼▲</span></th>
+                                <th className="p-2 font-semibold cursor-pointer">Kode Jenis <span className="text-slate-300 text-[10px]">▼▲</span></th>
+                                <th className="p-2 font-semibold cursor-pointer">Nama Jenis <span className="text-slate-300 text-[10px]">▼▲</span></th>
+                                <th className="p-2 font-semibold cursor-pointer">Keterangan <span className="text-slate-300 text-[10px]">▼▲</span></th>
+                                <th className="p-2 font-semibold cursor-pointer w-24">Aksi <span className="text-slate-300 text-[10px]">▼▲</span></th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
-                            {data.map((item, i) => (
-                                <tr key={item.id} className="hover:bg-slate-50/50 transition">
-                                    <td className="px-5 py-3 text-slate-400">{i + 1}</td>
-                                    <td className="px-5 py-3">
-                                        <code className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded text-xs font-mono font-bold">{item.kode}</code>
-                                    </td>
-                                    <td className="px-5 py-3 font-medium text-slate-700">{item.nama}</td>
-                                    <td className="px-5 py-3 text-slate-500">{item.keterangan || '-'}</td>
-                                    <td className="px-5 py-3 text-center">
-                                        <span className={`inline-flex items-center gap-1.5 text-xs px-2.5 py-1 rounded-full font-medium border ${
-                                            item.isAktif ? 'bg-green-50 text-green-700 border-green-200' : 'bg-slate-100 text-slate-500 border-slate-200'
-                                        }`}>
-                                            <span className={`w-1.5 h-1.5 rounded-full ${item.isAktif ? 'bg-green-500' : 'bg-slate-400'}`} />
-                                            {item.isAktif ? 'Aktif' : 'Nonaktif'}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-3">
-                                        <div className="flex items-center justify-center gap-1">
-                                            <button onClick={() => handleToggle(item.id)}
-                                                className={`p-1.5 rounded-lg transition ${item.isAktif ? 'text-orange-500 hover:bg-orange-50' : 'text-green-500 hover:bg-green-50'}`}
-                                                title={item.isAktif ? 'Nonaktifkan' : 'Aktifkan'}>
-                                                {item.isAktif ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-                                            </button>
-                                            <button onClick={() => handleOpen(item)}
-                                                className="p-1.5 rounded-lg text-slate-400 hover:bg-indigo-50 hover:text-indigo-600 transition" title="Edit">
-                                                <Pencil size={14} />
-                                            </button>
-                                            <button onClick={() => handleDelete(item.id, item.nama)}
-                                                className="p-1.5 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-500 transition" title="Hapus">
-                                                <Trash2 size={14} />
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))}
+                        <tbody>
+                            {loading ? (
+                                <tr><td colSpan={5} className="p-4 text-center text-slate-400">Loading...</td></tr>
+                            ) : paginated.length === 0 ? (
+                                <tr><td colSpan={5} className="p-4 text-center text-slate-400">Tidak ada data</td></tr>
+                            ) : (
+                                paginated.map((item, idx) => (
+                                    <tr key={item.id} className={`border-b border-slate-100 ${idx % 2 === 0 ? 'bg-white' : 'bg-slate-50'}`}>
+                                        <td className="p-2">{(page - 1) * limit + idx + 1}.</td>
+                                        <td className="p-2">{item.kode}</td>
+                                        <td className="p-2">{item.nama}</td>
+                                        <td className="p-2">{item.keterangan || '-'}</td>
+                                        <td className="p-2">
+                                            <div className="flex gap-1.5">
+                                                <button onClick={() => handleEdit(item)} className="p-1 border bg-white rounded text-slate-600 hover:text-blue-600">
+                                                    <Edit2 size={14} />
+                                                </button>
+                                                <button onClick={() => handleDelete(item.id)} className="p-1 border bg-white rounded text-slate-600 hover:text-red-500">
+                                                    <Trash2 size={14} />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                ))
+                            )}
                         </tbody>
                     </table>
                 </div>
-            )}
+
+                <div className="flex justify-between items-center px-4 py-4 text-sm text-slate-600 border-t">
+                    <div>Menampilkan {paginated.length > 0 ? (page - 1) * limit + 1 : 0} - {Math.min(page * limit, filtered.length)} dari total {filtered.length} item</div>
+                    <div className="flex border rounded overflow-hidden">
+                        <button disabled={page === 1} onClick={() => setPage(page - 1)} className="px-3 py-1 bg-white hover:bg-slate-50 disabled:opacity-50 border-r text-slate-600"><ChevronLeft size={16} /></button>
+                        <span className="px-3 py-1 bg-blue-500 text-white font-medium">{page}</span>
+                        <button disabled={page === totalPages || totalPages === 0} onClick={() => setPage(page + 1)} className="px-3 py-1 bg-white hover:bg-slate-50 disabled:opacity-50 border-l text-slate-600"><ChevronRight size={16} /></button>
+                    </div>
+                </div>
+            </div>
 
             {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-                        <div className="flex items-center justify-between p-5 border-b">
-                            <div className="flex items-center gap-3">
-                                <div className="w-9 h-9 bg-emerald-50 rounded-xl flex items-center justify-center">
-                                    <Database size={17} className="text-emerald-600" />
-                                </div>
-                                <h2 className="font-bold text-slate-800">
-                                    {editData ? 'Edit Jenis Keuangan' : 'Tambah Jenis Keuangan'}
-                                </h2>
-                            </div>
-                            <button onClick={() => setShowModal(false)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-100 transition"><X size={18} /></button>
+                    <div className="bg-white rounded-md shadow-xl w-full max-w-md overflow-hidden">
+                        <div className="flex items-center justify-between p-4 border-b bg-slate-50">
+                            <h2 className="font-semibold text-slate-700">{editData ? 'Edit Master Jenis' : 'Tambah Master Jenis'}</h2>
+                            <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600"><X size={18} /></button>
                         </div>
-
-                        <div className="p-5 space-y-4">
+                        <div className="p-4 space-y-4 text-sm">
                             <div>
-                                <label className={labelClass}>Kode Jenis *</label>
-                                <div className="relative">
-                                    <Hash size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input type="text" value={form.kode}
-                                        onChange={e => setForm({ ...form, kode: e.target.value.toUpperCase() })}
-                                        className={`${inputClass} pl-9 uppercase`}
-                                        placeholder="Contoh: UPP, UKP, BPP" />
-                                </div>
+                                <label className="block mb-1 text-slate-600">Kode Jenis *</label>
+                                <input type="text" value={form.kode} onChange={e => setForm({...form, kode: e.target.value})} className="w-full border rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="1 / UPP / Pendaftaran" />
                             </div>
                             <div>
-                                <label className={labelClass}>Nama Keuangan Jenis *</label>
-                                <div className="relative">
-                                    <FileText size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                                    <input type="text" value={form.nama}
-                                        onChange={e => setForm({ ...form, nama: e.target.value })}
-                                        className={`${inputClass} pl-9`}
-                                        placeholder="Contoh: Uang Pangkal Perkuliahan" />
-                                </div>
+                                <label className="block mb-1 text-slate-600">Nama Jenis *</label>
+                                <input type="text" value={form.nama} onChange={e => setForm({...form, nama: e.target.value})} className="w-full border rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none" placeholder="Uang Pendaftaran" />
                             </div>
                             <div>
-                                <label className={labelClass}>Keterangan</label>
-                                <textarea value={form.keterangan}
-                                    onChange={e => setForm({ ...form, keterangan: e.target.value })}
-                                    className={`${inputClass} min-h-[80px]`}
-                                    placeholder="Deskripsi jenis keuangan (opsional)" rows={3} />
+                                <label className="block mb-1 text-slate-600">Keterangan</label>
+                                <textarea rows={2} value={form.keterangan} onChange={e => setForm({...form, keterangan: e.target.value})} className="w-full border rounded p-2 focus:ring-1 focus:ring-blue-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={form.isAktif} onChange={e => setForm({...form, isAktif: e.target.checked})} className="rounded" />
+                                    <span className="text-slate-600">Aktif</span>
+                                </label>
                             </div>
                         </div>
-
-                        <div className="p-5 border-t flex gap-3">
-                            <button onClick={() => setShowModal(false)}
-                                className="flex-1 border border-slate-200 text-slate-600 py-2.5 rounded-xl text-sm hover:bg-slate-50 transition">
-                                Batal
-                            </button>
-                            <button onClick={handleSubmit} disabled={saving}
-                                className="flex-1 flex items-center justify-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-xl text-sm font-semibold disabled:opacity-50 transition">
-                                {saving ? (
-                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Menyimpan...</>
-                                ) : (
-                                    <><Save size={14} /> Simpan</>
-                                )}
+                        <div className="p-4 border-t flex justify-end gap-2 bg-slate-50">
+                            <button onClick={() => setShowModal(false)} className="px-4 py-2 border bg-white rounded text-slate-600 hover:bg-slate-50 text-sm">Batal</button>
+                            <button onClick={handleSubmit} disabled={saving} className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm flex items-center gap-2 disabled:opacity-50">
+                                <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan'}
                             </button>
                         </div>
                     </div>

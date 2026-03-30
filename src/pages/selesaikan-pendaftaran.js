@@ -52,12 +52,12 @@ const STATUS_CONFIG = {
         showLanjut: false,
         showWaiting: true,
     },
-    GUGUR: {
+    GAGAL: {
         icon: XCircle,
         iconBg: 'bg-red-50',
         iconColor: 'text-red-500',
-        title: 'Pendaftaran Gugur',
-        desc: 'Maaf, pendaftaran kamu dinyatakan gugur. Silakan hubungi panitia penerimaan mahasiswa baru untuk informasi lebih lanjut.',
+        title: 'Mohon Maaf, Anda Belum Lulus.',
+        desc: 'Berdasarkan hasil seleksi tes Anda dinyatakan tidak lolos seleksi penerimaan mahasiswa baru.',
         showLanjut: false,
         showWaiting: false,
     },

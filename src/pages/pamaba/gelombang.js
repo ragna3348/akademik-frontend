@@ -15,7 +15,7 @@ export default function GelombangPage() {
     const [saving, setSaving] = useState(false);
     const [form, setForm] = useState({
         nama: '', tahun: new Date().getFullYear(),
-        tanggalBuka: '', tanggalTutup: '', biayaDaftar: ''
+        tanggalBuka: '', tanggalTutup: '', diskonUKP: ''
     });
 
     const fetchData = async () => {
@@ -68,14 +68,14 @@ export default function GelombangPage() {
             tahun: item.tahun,
             tanggalBuka: item.tanggalBuka?.split('T')[0],
             tanggalTutup: item.tanggalTutup?.split('T')[0],
-            biayaDaftar: item.biayaDaftar
+            diskonUKP: item.diskonUKP || 0
         });
         setShowModal(true);
     };
 
     const handleOpenAdd = () => {
         setEditData(null);
-        setForm({ nama: '', tahun: new Date().getFullYear(), tanggalBuka: '', tanggalTutup: '', biayaDaftar: '' });
+        setForm({ nama: '', tahun: new Date().getFullYear(), tanggalBuka: '', tanggalTutup: '', diskonUKP: '' });
         setShowModal(true);
     };
 
@@ -152,10 +152,10 @@ export default function GelombangPage() {
                                 </div>
                                 <div className="bg-slate-50 rounded-xl p-3">
                                     <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-1">
-                                        <DollarSign size={11} /> Biaya Daftar
+                                        <DollarSign size={11} /> Diskon UKP
                                     </div>
                                     <div className="text-sm font-medium text-slate-600">
-                                        Rp {Number(item.biayaDaftar).toLocaleString('id-ID')}
+                                        {item.diskonUKP || 0}%
                                     </div>
                                 </div>
                                 <div className="bg-slate-50 rounded-xl p-3">
@@ -237,12 +237,13 @@ export default function GelombangPage() {
                                         className={inputClass} />
                                 </div>
                             </div>
-                            <div>
-                                <label className={labelClass}>Biaya Pendaftaran (Rp)</label>
-                                <input type="number" value={form.biayaDaftar}
-                                    onChange={e => setForm({ ...form, biayaDaftar: e.target.value })}
-                                    className={inputClass} placeholder="300000" />
-                            </div>
+
+                                <div>
+                                    <label className={labelClass}>Diskon UKP (%)</label>
+                                    <input type="number" min="0" max="100" value={form.diskonUKP}
+                                        onChange={e => setForm({ ...form, diskonUKP: e.target.value })}
+                                        className={inputClass} placeholder="Misal: 50" />
+                                </div>
                         </div>
 
                         <div className="p-5 border-t flex gap-3">
