@@ -666,7 +666,6 @@ useEffect(() => {
                                         className={inputClass} placeholder="08xxxxxxxxxx" />
                                 </div>
                                 <div>
-                                    <label className={labelClass}>Alamat Domisili *</label>
                                     <WilayahDropdown onChange={(a) => setForm(f => ({ ...f, alamat: a }))} />
                                 </div>
                             </div>

@@ -18,7 +18,7 @@ const ROLE_HOME = {
 
 const ADMIN_ROUTES = ['/dashboard', '/akademik', '/keuangan', '/pamaba', '/jadwal', '/pengaturan'];
 const MAHASISWA_ROUTES = ['/portal'];
-const DAFTAR_ROUTES = ['/daftar', '/selesaikan-pendaftaran'];
+const DAFTAR_ROUTES = ['/daftar', '/selesaikan-pendaftaran', '/portal/pendaftar/ujian'];
 
 export default function App({ Component, pageProps }) {
     const router = useRouter();
