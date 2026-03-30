@@ -3,7 +3,7 @@ import { useRouter } from 'next/router';
 import axios from 'axios';
 import {
     GraduationCap, ArrowRight, AlertCircle, LogOut,
-    Clock, CheckCircle, XCircle, Loader, FileQuestion, ClipboardList
+    Clock, CheckCircle, XCircle, Loader, FileQuestion, ClipboardList, UploadCloud
 } from 'lucide-react';
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
 const STATUS_CONFIG = {
@@ -69,6 +69,9 @@ export default function SelesaikanPendaftaran() {
     const [noPendaftaran, setNoPendaftaran] = useState(null);
     const [loading, setLoading] = useState(true);
     const [user, setUser] = useState(null);
+    const [pembayaran, setPembayaran] = useState(null);
+    const [fileBukti, setFileBukti] = useState(null);
+    const [uploading, setUploading] = useState(false);
 
     useEffect(() => {
         try {
@@ -94,8 +97,12 @@ export default function SelesaikanPendaftaran() {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data?.data) {
-                setStatus(res.data.data.status);
-                setNoPendaftaran(res.data.data.noPendaftaran);
+                const data = res.data.data;
+                setStatus(data.status);
+                setNoPendaftaran(data.noPendaftaran);
+                if (data.pembayaran && data.pembayaran.length > 0) {
+                    setPembayaran(data.pembayaran[0]); // Ambil tagihan pertama
+                }
             }
         } catch {
             // Kalau endpoint tidak ada, default ke DAFTAR
@@ -131,6 +138,30 @@ export default function SelesaikanPendaftaran() {
         await fetchStatus(user?.email);
     };
 
+    const handleUploadBukti = async (e) => {
+        e.preventDefault();
+        if (!fileBukti || !pembayaran) return;
+        setUploading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const fd = new FormData();
+            fd.append('buktiBayar', fileBukti);
+            
+            await axios.post(`${BASE_URL}/pamaba/pembayaran/${pembayaran.id}/upload-bukti`, fd, {
+                headers: { 
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            alert('Bukti pembayaran berhasil diupload!');
+            await fetchStatus(user?.email);
+        } catch (error) {
+            alert(error.response?.data?.message || 'Gagal upload bukti');
+        } finally {
+            setUploading(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-blue-950 via-blue-900 to-blue-800 flex items-center justify-center">
@@ -163,8 +194,41 @@ export default function SelesaikanPendaftaran() {
                     </div>
                 )}
 
-                {/* Steps untuk DAFTAR */}
-                {cfg.showLanjut && (
+                {/* Info Tagihan Pembayaran jika DAFTAR dan punya pembayaran */}
+                {status === 'DAFTAR' && pembayaran && (
+                    <div className="bg-sky-50 border border-sky-200 rounded-xl p-5 mb-5 text-left">
+                        <div className="text-sm text-sky-600 font-semibold mb-3">Tagihan Pembayaran Pendaftaran</div>
+                        <div className="flex justify-between items-center mb-2">
+                            <span className="text-slate-500 text-sm">Nominal Tagihan:</span>
+                            <span className="font-bold text-slate-800">Rp {pembayaran.nominal.toLocaleString('id-ID')}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-4">
+                            <span className="text-slate-500 text-sm">Status:</span>
+                            <span className="font-semibold text-rose-500">{pembayaran.status.replace('_', ' ')}</span>
+                        </div>
+                        <div className="bg-white rounded-lg p-3 border border-slate-200 mb-4 text-sm text-slate-600">
+                            Silakan transfer ke rekening berikut:<br/>
+                            <strong className="text-slate-800">Bank BSI - 1234567890</strong><br/>
+                            a.n Universitas Dummy
+                        </div>
+
+                        <form onSubmit={handleUploadBukti}>
+                            <label className="block text-sm font-medium text-slate-700 mb-1">Upload Bukti Transfer (Gambar)</label>
+                            <input type="file" required accept="image/*"
+                                onChange={(e) => setFileBukti(e.target.files[0])}
+                                className="w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-sky-100 file:text-sky-700 hover:file:bg-sky-200 mb-3"
+                            />
+                            <button type="submit" disabled={uploading || !fileBukti}
+                                className="w-full flex items-center justify-center gap-2 bg-sky-600 hover:bg-sky-700 text-white py-2.5 rounded-lg font-semibold transition disabled:opacity-50">
+                                {uploading ? <Loader size={16} className="animate-spin" /> : <UploadCloud size={16} />}
+                                {uploading ? 'Mengupload...' : 'Kirim Bukti Pembayaran'}
+                            </button>
+                        </form>
+                    </div>
+                )}
+
+                {/* Steps untuk DAFTAR (Hanya jika belum registrasi tuntas) */}
+                {cfg.showLanjut && !pembayaran && (
                     <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-5 text-left space-y-2">
                         {['Lengkapi data pribadi', 'Pilih program studi', 'Upload dokumen', 'Submit pendaftaran'].map((step, i) => (
                             <div key={i} className="flex items-center gap-2.5 text-sm text-slate-600">
@@ -178,7 +242,7 @@ export default function SelesaikanPendaftaran() {
                 )}
 
                 {/* Info tunggu untuk BAYAR/LULUS */}
-                {cfg.showWaiting && (
+                {cfg.showWaiting && status !== 'UJIAN' && (
                     <div className="bg-slate-50 border border-slate-100 rounded-xl p-4 mb-5 text-left">
                         <div className="flex items-center gap-2 text-slate-500 text-sm">
                             <Loader size={14} className="text-slate-400" />
@@ -187,8 +251,16 @@ export default function SelesaikanPendaftaran() {
                     </div>
                 )}
 
+                {/* Tombol Mulai Ujian */}
+                {status === 'UJIAN' && (
+                    <button onClick={() => router.push('/portal/pendaftar/ujian')}
+                        className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white py-3.5 rounded-xl font-bold transition mb-3 shadow-lg shadow-indigo-200">
+                        <FileQuestion size={18} /> Mulai Ujian Tes Sekarang
+                    </button>
+                )}
+
                 {/* Tombol aksi */}
-                {cfg.showLanjut && (
+                {cfg.showLanjut && !pembayaran && (
                     <button onClick={() => router.push('/daftar')}
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-xl font-semibold transition mb-3">
                         <GraduationCap size={16} /> Lanjutkan Pendaftaran <ArrowRight size={16} />
